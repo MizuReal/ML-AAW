@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+python-multipart
+sqlalchemy
+easyocr
+torch
+torchvision
+torchaudio
+opencv-python-headless
+opencv-python
+Pillow
+pandas
+supabase
+scikit-learn
