@@ -21,9 +21,9 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className="bg-slate-950">
+    <html lang="en" className="bg-[var(--page-bg)]" data-theme="dark">
       <body
-        className={`${spaceGrotesk.variable} ${plexMono.variable} bg-slate-950 text-slate-100 antialiased`}
+        className={`${spaceGrotesk.variable} ${plexMono.variable} bg-[var(--page-bg)] text-[var(--page-text)] antialiased`}
       >
         {children}
       </body>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import AuthModal from "@/components/AuthModal";
+import ThemeToggle from "@/components/ThemeToggle";
 import { isSupabaseConfigured, supabase } from "@/lib/supabaseClient";
 
 export default function Navigation() {
@@ -75,6 +76,7 @@ export default function Navigation() {
             >
               Dashboard
             </button>
+            <ThemeToggle />
             <button
               className="rounded-full border border-white/30 px-4 py-2 text-white transition hover:border-white/70"
               type="button"

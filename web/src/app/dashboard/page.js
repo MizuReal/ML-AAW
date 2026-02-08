@@ -5,14 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { isSupabaseConfigured, supabase } from "@/lib/supabaseClient";
+import UserSamples from "./user_samples";
 
-const navItems = [
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "My scans", href: "/dashboard/scans" },
-  { label: "Analytics", href: "/dashboard/analytics" },
-  { label: "Settings", href: "/dashboard/settings" },
-  { label: "Logout", href: "/logout" },
-];
 
 const statCards = [
   {
@@ -83,14 +77,10 @@ const configMissing = !supabase || !isSupabaseConfigured;
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [collapsed, setCollapsed] = useState(false);
-  const [activeItem, setActiveItem] = useState(navItems[0].label);
   const [authReady, setAuthReady] = useState(false);
   const [authError, setAuthError] = useState(null);
   const [checking, setChecking] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
-
-  const sidebarWidth = collapsed ? "w-20" : "w-64";
 
   const todaysSummary = useMemo(
     () => ({
@@ -145,19 +135,6 @@ export default function DashboardPage() {
     };
   }, [router]);
 
-  const handleNavItemClick = async (item) => {
-    if (item.label === "Logout") {
-      if (supabase) {
-        await supabase.auth.signOut();
-      }
-      router.replace("/");
-      return;
-    }
-    setActiveItem(item.label);
-    if (item.href) {
-      router.push(item.href);
-    }
-  };
 
   if (configMissing) {
     return (
@@ -201,53 +178,6 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      <div className="flex">
-        <aside
-          className={`${sidebarWidth} sticky top-0 flex h-screen flex-col border-r border-white/10 bg-gradient-to-b from-[#030a18] via-[#050f22] to-[#040a16] px-4 py-6 transition-all duration-300 ease-out`}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold tracking-[0.4em] text-cyan-200">AQ</span>
-              {!collapsed && <p className="text-sm text-white/70">Console</p>}
-            </div>
-            <button
-              type="button"
-              aria-label="Toggle sidebar"
-              className="rounded-full border border-white/20 bg-white/5 p-2 text-white"
-              onClick={() => setCollapsed((prev) => !prev)}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          </div>
-          <nav className="mt-10 space-y-2">
-            {navItems.map((item) => (
-              <button
-                key={item.label}
-                className={`flex w-full items-center gap-3 rounded-2xl border border-transparent px-3 py-3 text-left text-sm uppercase tracking-[0.35em] transition ${
-                  activeItem === item.label ? "border-white/20 bg-white/10 text-white" : "text-white/60 hover:border-white/10 hover:bg-white/5"
-                }`}
-                onClick={() => handleNavItemClick(item)}
-              >
-                <span className="h-2 w-2 rounded-full bg-lime-200" />
-                {!collapsed && <span>{item.label}</span>}
-              </button>
-            ))}
-          </nav>
-          <div className="mt-auto space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-white/60">
-            <p>Samples today: {todaysSummary.samples}</p>
-            <p>Anomalies: {todaysSummary.anomalies}</p>
-            <p>Compliance: {todaysSummary.compliance}</p>
-          </div>
-          {!collapsed && (
-            <Link href="/" className="mt-3 text-xs uppercase tracking-[0.4em] text-cyan-200">
-              ← Back to site
-            </Link>
-          )}
-        </aside>
-
         <section className="flex-1 px-6 py-10 lg:px-12">
           <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -389,8 +319,10 @@ export default function DashboardPage() {
               </div>
             </article>
           </div>
+
+          <div className="mt-10">
+            <UserSamples />
+          </div>
         </section>
-      </div>
-    </div>
   );
 }
