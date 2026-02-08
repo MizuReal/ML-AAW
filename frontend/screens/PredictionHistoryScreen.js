@@ -8,33 +8,11 @@ import {
   TouchableOpacity,
   Animated,
 } from 'react-native';
+import { supabase } from '../utils/supabaseClient';
+import WaterResultScreen from './WaterResultScreen';
 
-const DATA_HISTORY = [
-  {
-    id: 'D-1024',
-    timestamp: '2026-01-18 • 09:41 UTC',
-    location: 'Lake Biwa intake',
-    predictedClass: 'Low microbiological risk',
-    confidence: 0.92,
-    status: 'Cleared',
-  },
-  {
-    id: 'D-1019',
-    timestamp: '2026-01-18 • 07:22 UTC',
-    location: 'Rural well cluster',
-    predictedClass: 'Nitrate elevation suspected',
-    confidence: 0.84,
-    status: 'Review',
-  },
-  {
-    id: 'D-1007',
-    timestamp: '2026-01-17 • 18:04 UTC',
-    location: 'Irrigation canal segment B',
-    predictedClass: 'Turbidity-driven risk',
-    confidence: 0.89,
-    status: 'Alert',
-  },
-];
+const SUPABASE_SAMPLES_TABLE = process.env.EXPO_PUBLIC_SUPABASE_SAMPLES_TABLE || 'field_samples';
+const DEFAULT_DECISION_THRESHOLD = 0.58;
 
 const CONTAINER_HISTORY = [
   {
@@ -75,9 +53,70 @@ const STATUS_TEXT_CLASSES = {
   Alert: 'text-rose-200',
 };
 
+const formatTimestamp = (timestamp) => {
+  if (!timestamp) return 'timestamp unavailable';
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return 'timestamp unavailable';
+  return date.toLocaleString();
+};
+
+const buildPredictedClass = (row) => {
+  if (typeof row?.prediction_is_potable !== 'boolean') {
+    return row?.risk_level ? `Risk: ${row.risk_level}` : 'Prediction pending';
+  }
+  if (row.prediction_is_potable) {
+    return row.risk_level ? `Potable (${row.risk_level})` : 'Potable';
+  }
+  return row.risk_level ? `Non-potable (${row.risk_level})` : 'Non-potable';
+};
+
+const deriveStatus = (row) => {
+  const risk = (row?.risk_level || '').toLowerCase();
+  if (risk === 'safe' || risk === 'borderline') return 'Cleared';
+  if (risk === 'watch') return 'Review';
+  if (risk === 'unsafe') return 'Alert';
+  return 'Review';
+};
+
+const buildSummaryMessage = (row) => {
+  if (row?.prediction_is_potable) {
+    return row?.risk_level === 'safe'
+      ? 'Sample matches potable water profile with strong confidence.'
+      : 'Sample is marginally potable but monitor outlier parameters.';
+  }
+  return row?.risk_level === 'watch'
+    ? 'Sample trends toward non-potable; investigate highlighted parameters.'
+    : 'Sample is likely non-potable; escalate for confirmatory testing.';
+};
+
+const buildResultFromRow = (row) => ({
+  isPotable: !!row?.prediction_is_potable,
+  probability: Number.isFinite(row?.prediction_probability)
+    ? Number(row.prediction_probability)
+    : 0,
+  decisionThreshold: DEFAULT_DECISION_THRESHOLD,
+  riskLevel: row?.risk_level || 'unknown',
+  modelVersion: row?.model_version || 'model',
+  timestamp: row?.created_at || null,
+  checks: Array.isArray(row?.anomaly_checks) ? row.anomaly_checks : [],
+  missingFeatures: [],
+  meta: {
+    source: row?.source || null,
+    color: row?.color || null,
+    sampleLabel: row?.sample_label || null,
+  },
+  saved: true,
+  sampleId: row?.id || null,
+  message: buildSummaryMessage(row),
+});
+
 const PredictionHistoryScreen = ({ onNavigate }) => {
   const [activeTab, setActiveTab] = useState('data'); // 'data' | 'container'
   const [selectedId, setSelectedId] = useState(null);
+  const [dataHistory, setDataHistory] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [detailVisible, setDetailVisible] = useState(false);
+  const [detailResult, setDetailResult] = useState(null);
   const screenAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -89,12 +128,83 @@ const PredictionHistoryScreen = ({ onNavigate }) => {
     }).start();
   }, [screenAnim]);
 
-  const items = activeTab === 'data' ? DATA_HISTORY : CONTAINER_HISTORY;
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadHistory = async () => {
+      if (activeTab !== 'data') {
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const sessionResult = await supabase.auth.getSession();
+        const userId = sessionResult?.data?.session?.user?.id || null;
+        if (!userId) {
+          if (isMounted) {
+            setDataHistory([]);
+          }
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from(SUPABASE_SAMPLES_TABLE)
+          .select(
+            'id, created_at, source, sample_label, color, risk_level, prediction_probability, prediction_is_potable, model_version, anomaly_checks'
+          )
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        if (error) {
+          console.warn('[Supabase] failed to load prediction history:', error.message || error);
+          if (isMounted) {
+            setDataHistory([]);
+          }
+          return;
+        }
+
+        const mapped = (data || []).map((row) => ({
+          id: row.id,
+          timestamp: formatTimestamp(row.created_at),
+          location: row.sample_label || row.source || 'Sample',
+          predictedClass: buildPredictedClass(row),
+          confidence: Number.isFinite(row.prediction_probability)
+            ? Number(row.prediction_probability)
+            : 0,
+          status: deriveStatus(row),
+          _raw: row,
+        }));
+
+        if (isMounted) {
+          setDataHistory(mapped);
+        }
+      } catch (error) {
+        console.warn('[Supabase] unexpected history load error:', error?.message || error);
+        if (isMounted) {
+          setDataHistory([]);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadHistory();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeTab]);
+
+  const items = activeTab === 'data' ? dataHistory : CONTAINER_HISTORY;
 
   const renderCard = (item) => {
     const statusClass = STATUS_STYLES[item.status] || 'border-sky-700 bg-sky-900/40';
     const statusTextClass = STATUS_TEXT_CLASSES[item.status] || 'text-sky-100';
-    const isSelected = selectedId === item.id;
+    const isSelected = activeTab === 'container' && selectedId === item.id;
+    const canShowDetails = activeTab === 'data';
 
     return (
       <View
@@ -148,11 +258,20 @@ const PredictionHistoryScreen = ({ onNavigate }) => {
 
         <View className="mt-3 flex-row items-center justify-between">
           <Text className="text-[11px] text-slate-500">
-            Status combines model output with simple rules.
+            {activeTab === 'data'
+              ? 'Status derives from saved risk level.'
+              : 'Status combines model output with simple rules.'}
           </Text>
           <TouchableOpacity
             activeOpacity={0.85}
-            onPress={() => setSelectedId(isSelected ? null : item.id)}
+            onPress={() => {
+              if (canShowDetails) {
+                setDetailResult(buildResultFromRow(item._raw));
+                setDetailVisible(true);
+              } else {
+                setSelectedId(isSelected ? null : item.id);
+              }
+            }}
             className="rounded-full border border-aquaprimary/70 bg-aquaprimary/10 px-3 py-1"
           >
             <Text className="text-[11px] font-medium text-sky-50">
@@ -182,6 +301,11 @@ const PredictionHistoryScreen = ({ onNavigate }) => {
       className="flex-1 bg-aquadark"
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <WaterResultScreen
+        visible={detailVisible && Boolean(detailResult)}
+        result={detailResult}
+        onClose={() => setDetailVisible(false)}
+      />
       <Animated.View
         className="flex-1"
         style={{
@@ -267,6 +391,18 @@ const PredictionHistoryScreen = ({ onNavigate }) => {
         </View>
 
         <View className="mt-3">
+          {activeTab === 'data' && loading ? (
+            <View className="rounded-2xl border border-sky-900/70 bg-sky-950/40 p-4">
+              <Text className="text-[12px] text-slate-400">Loading recent samples...</Text>
+            </View>
+          ) : null}
+          {activeTab === 'data' && !loading && items.length === 0 ? (
+            <View className="rounded-2xl border border-sky-900/70 bg-sky-950/40 p-4">
+              <Text className="text-[12px] text-slate-400">
+                No saved samples yet. Run a new check to populate history.
+              </Text>
+            </View>
+          ) : null}
           {items.map(renderCard)}
         </View>
       </ScrollView>

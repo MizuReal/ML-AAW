@@ -7,26 +7,235 @@ import {
   Platform,
   TouchableOpacity,
   Animated,
+  Image,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import InputField from '../components/InputField';
 import PredictButton from '../components/PredictButton';
+import { supabase } from '../utils/supabaseClient';
+
+const SUPABASE_PROFILES_TABLE = process.env.EXPO_PUBLIC_SUPABASE_PROFILES_TABLE || 'profiles';
+const SUPABASE_AVATAR_BUCKET = process.env.EXPO_PUBLIC_SUPABASE_AVATAR_BUCKET || 'avatars';
+
+const getAvatarPathFromUrl = (url) => {
+  if (!url) return '';
+  const marker = `/${SUPABASE_AVATAR_BUCKET}/`;
+  const index = url.indexOf(marker);
+  if (index === -1) return '';
+  return url.slice(index + marker.length);
+};
+
+const getInitials = (value) => {
+  if (!value) return 'NA';
+  const parts = value.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return 'NA';
+  const first = parts[0][0] || '';
+  const last = parts.length > 1 ? parts[parts.length - 1][0] || '' : '';
+  return `${first}${last}`.toUpperCase();
+};
 
 const ProfileScreen = ({ onNavigate }) => {
   const [profile, setProfile] = useState({
-    name: 'Water quality analyst',
-    email: 'you@example.com',
-    organization: 'Lab / utility name',
+    name: '',
+    email: '',
+    organization: '',
+    avatarUrl: '',
   });
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState('');
   const screenAnim = useRef(new Animated.Value(0)).current;
 
   const handleChange = (key, value) => {
     setProfile((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSave = () => {
-    // Placeholder for backend integration
-    console.log('Profile updated', profile);
+  const handleSave = async () => {
+    setStatus('');
+    setLoading(true);
+    try {
+      const sessionResult = await supabase.auth.getSession();
+      const user = sessionResult?.data?.session?.user || null;
+      if (!user) {
+        setStatus('Please sign in to update your profile.');
+        return;
+      }
+
+      const updates = {
+        id: user.id,
+        display_name: profile.name || null,
+        organization: profile.organization || null,
+        avatar_url: profile.avatarUrl || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from(SUPABASE_PROFILES_TABLE)
+        .upsert(updates, { onConflict: 'id' });
+
+      if (error) {
+        console.warn('[Supabase] profile update failed:', error.message || error);
+        setStatus('Unable to save profile right now.');
+        return;
+      }
+
+      setStatus('Profile saved.');
+    } catch (error) {
+      console.warn('[Supabase] profile update error:', error?.message || error);
+      setStatus('Unable to save profile right now.');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handlePickAvatar = async () => {
+    setStatus('');
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        setStatus('Media library permission is required to upload a photo.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (result.canceled || !result.assets?.length) {
+        return;
+      }
+
+      const asset = result.assets[0];
+      const sessionResult = await supabase.auth.getSession();
+      const user = sessionResult?.data?.session?.user || null;
+      if (!user) {
+        setStatus('Please sign in to update your profile.');
+        return;
+      }
+
+      setLoading(true);
+      const response = await fetch(asset.uri);
+      const blob = await response.blob();
+      const filePath = `${user.id}.jpg`;
+
+      const { error: uploadError } = await supabase.storage
+        .from(SUPABASE_AVATAR_BUCKET)
+        .upload(filePath, blob, {
+          upsert: true,
+          contentType: 'image/jpeg',
+        });
+
+      if (uploadError) {
+        console.warn('[Supabase] avatar upload failed:', uploadError.message || uploadError);
+        setStatus('Unable to upload avatar.');
+        return;
+      }
+
+      const { data: publicData } = supabase.storage
+        .from(SUPABASE_AVATAR_BUCKET)
+        .getPublicUrl(filePath);
+      const avatarUrl = publicData?.publicUrl || '';
+
+      setProfile((prev) => ({ ...prev, avatarUrl }));
+      setStatus('Photo updated. Tap Save changes to confirm.');
+    } catch (error) {
+      console.warn('[Supabase] avatar upload error:', error?.message || error);
+      setStatus('Unable to upload avatar.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    setStatus('');
+    setLoading(true);
+    try {
+      const sessionResult = await supabase.auth.getSession();
+      const user = sessionResult?.data?.session?.user || null;
+      if (!user) {
+        setStatus('Please sign in to update your profile.');
+        return;
+      }
+
+      const storedPath = getAvatarPathFromUrl(profile.avatarUrl) || `${user.id}.jpg`;
+      await supabase.storage.from(SUPABASE_AVATAR_BUCKET).remove([storedPath]);
+
+      const updates = {
+        id: user.id,
+        avatar_url: null,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from(SUPABASE_PROFILES_TABLE)
+        .upsert(updates, { onConflict: 'id' });
+
+      if (error) {
+        console.warn('[Supabase] profile update failed:', error.message || error);
+        setStatus('Unable to remove avatar right now.');
+        return;
+      }
+
+      setProfile((prev) => ({ ...prev, avatarUrl: '' }));
+      setStatus('Photo removed.');
+    } catch (error) {
+      console.warn('[Supabase] avatar remove error:', error?.message || error);
+      setStatus('Unable to remove avatar right now.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadProfile = async () => {
+      setLoading(true);
+      try {
+        const sessionResult = await supabase.auth.getSession();
+        const user = sessionResult?.data?.session?.user || null;
+        if (!user) {
+          if (isMounted) {
+            setProfile({ name: '', email: '', organization: '', avatarUrl: '' });
+          }
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from(SUPABASE_PROFILES_TABLE)
+          .select('display_name, organization, avatar_url')
+          .eq('id', user.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.warn('[Supabase] profile fetch failed:', error.message || error);
+        }
+
+        if (isMounted) {
+          setProfile({
+            name: data?.display_name || '',
+            email: user.email || '',
+            organization: data?.organization || '',
+            avatarUrl: data?.avatar_url || '',
+          });
+        }
+      } catch (error) {
+        console.warn('[Supabase] profile fetch error:', error?.message || error);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     Animated.timing(screenAnim, {
@@ -73,8 +282,20 @@ const ProfileScreen = ({ onNavigate }) => {
         </View>
 
         <View className="mt-1 flex-row items-center">
-          <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-sky-900/80">
-            <Text className="text-[18px] font-semibold text-sky-50">WA</Text>
+          <View className="mr-3 h-10 w-10 overflow-hidden rounded-full bg-sky-900/80">
+            {profile.avatarUrl ? (
+              <Image
+                source={{ uri: profile.avatarUrl }}
+                className="h-full w-full"
+                resizeMode="cover"
+              />
+            ) : (
+              <View className="h-full w-full items-center justify-center">
+                <Text className="text-[14px] font-semibold text-sky-50">
+                  {getInitials(profile.name || profile.email)}
+                </Text>
+              </View>
+            )}
           </View>
           <View className="flex-1">
             <Text className="text-[18px] font-semibold text-sky-100">
@@ -115,6 +336,7 @@ const ProfileScreen = ({ onNavigate }) => {
               value={profile.email}
               keyboardType="email-address"
               autoCapitalize="none"
+              editable={false}
               onChangeText={(v) => handleChange('email', v)}
               placeholder="you@example.com"
             />
@@ -129,11 +351,39 @@ const ProfileScreen = ({ onNavigate }) => {
           </View>
 
           <View className="mt-4">
-            <PredictButton title="Save changes" onPress={handleSave} />
-            <Text className="mt-2 text-[11px] text-slate-500">
-              Changes are kept locally for now. Connect a backend later to
-              sync across devices.
-            </Text>
+            {profile.avatarUrl ? (
+              <View className="mb-3">
+                <View className="h-24 w-24 overflow-hidden rounded-2xl border border-sky-900/60 bg-slate-950/60">
+                  <Image
+                    source={{ uri: profile.avatarUrl }}
+                    className="h-full w-full"
+                    resizeMode="cover"
+                  />
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={handleRemoveAvatar}
+                    className="absolute right-1 top-1 h-6 w-6 items-center justify-center rounded-full border border-rose-500/50 bg-rose-500/20"
+                  >
+                    <Text className="text-[12px] font-semibold text-rose-100">X</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : null}
+            <View className="flex-row flex-wrap gap-2">
+              <TouchableOpacity
+                activeOpacity={0.85}
+                className="rounded-full border border-sky-800 bg-slate-950/60 px-4 py-2"
+                onPress={handlePickAvatar}
+              >
+                <Text className="text-[12px] font-semibold text-sky-100">📷 Upload photo</Text>
+              </TouchableOpacity>
+            </View>
+            <View className="mt-3">
+              <PredictButton title={loading ? 'Saving...' : 'Save changes'} onPress={handleSave} />
+              <Text className="mt-2 text-[11px] text-slate-500">
+                {status || 'Changes sync to Supabase when saved.'}
+              </Text>
+            </View>
           </View>
         </View>
 

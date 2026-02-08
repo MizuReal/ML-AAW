@@ -1,5 +1,17 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Animated, Modal, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Animated, Modal, TextInput, Image } from 'react-native';
+import { supabase } from '../utils/supabaseClient';
+
+const SUPABASE_PROFILES_TABLE = process.env.EXPO_PUBLIC_SUPABASE_PROFILES_TABLE || 'profiles';
+
+const getInitials = (value) => {
+	if (!value) return 'NA';
+	const parts = value.trim().split(/\s+/).filter(Boolean);
+	if (!parts.length) return 'NA';
+	const first = parts[0][0] || '';
+	const last = parts.length > 1 ? parts[parts.length - 1][0] || '' : '';
+	return `${first}${last}`.toUpperCase();
+};
 
 const KEY_METRICS = [
 	{
@@ -114,6 +126,8 @@ const HomeScreen = ({ onNavigate }) => {
 	const [chatOpen, setChatOpen] = useState(false);
 	const [activeChatTab, setActiveChatTab] = useState('quality');
 	const [chatInput, setChatInput] = useState('');
+	const [profileName, setProfileName] = useState('');
+	const [avatarUrl, setAvatarUrl] = useState('');
 	const [chatThreads, setChatThreads] = useState({
 		quality: [
 			{
@@ -193,6 +207,47 @@ const HomeScreen = ({ onNavigate }) => {
 		]).start();
 	}, [heroAnim, cardsAnim]);
 
+	useEffect(() => {
+		let isMounted = true;
+
+		const loadProfile = async () => {
+			try {
+				const sessionResult = await supabase.auth.getSession();
+				const user = sessionResult?.data?.session?.user || null;
+				if (!user) {
+					if (isMounted) {
+						setProfileName('');
+						setAvatarUrl('');
+					}
+					return;
+				}
+
+				const { data, error } = await supabase
+					.from(SUPABASE_PROFILES_TABLE)
+					.select('display_name, avatar_url')
+					.eq('id', user.id)
+					.single();
+
+				if (error && error.code !== 'PGRST116') {
+					console.warn('[Supabase] profile fetch failed:', error.message || error);
+				}
+
+				if (isMounted) {
+					setProfileName(data?.display_name || user.email || '');
+					setAvatarUrl(data?.avatar_url || '');
+				}
+			} catch (error) {
+				console.warn('[Supabase] profile fetch error:', error?.message || error);
+			}
+		};
+
+		loadProfile();
+
+		return () => {
+			isMounted = false;
+		};
+	}, []);
+
 	const currentThread = chatThreads[activeChatTab === 'quality' ? 'quality' : 'data'] || [];
 
 	return (
@@ -238,11 +293,23 @@ const HomeScreen = ({ onNavigate }) => {
 					</View>
 
 					<View className="mt-5 items-center">
-						<View className="h-20 w-20 items-center justify-center rounded-[26px] border border-sky-800/70 bg-slate-950/70">
-							<Text className="text-[22px] font-semibold text-sky-50">AC</Text>
+						<View className="h-20 w-20 overflow-hidden rounded-[26px] border border-sky-800/70 bg-slate-950/70">
+							{avatarUrl ? (
+								<Image
+									source={{ uri: avatarUrl }}
+									className="h-full w-full"
+									resizeMode="cover"
+								/>
+							) : (
+								<View className="h-full w-full items-center justify-center">
+									<Text className="text-[22px] font-semibold text-sky-50">
+										{getInitials(profileName)}
+									</Text>
+								</View>
+							)}
 						</View>
 						<Text className="mt-3 text-[17px] font-semibold text-sky-50">
-							Dr. Aria Collins
+							{profileName || 'Field operator'}
 						</Text>
 						<Text className="text-[12px] text-slate-400">Field intelligence lead</Text>
 					</View>

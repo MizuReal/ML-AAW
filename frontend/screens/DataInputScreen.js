@@ -19,6 +19,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import InputField from '../components/InputField';
 import PredictButton from '../components/PredictButton';
 import { uploadDataCardForOCR, validateFiducials, submitWaterSample } from '../utils/api';
+import { supabase } from '../utils/supabaseClient';
 import WaterResultScreen from './WaterResultScreen';
 
 const colorOptions = ['Clear', 'Slightly tinted', 'Yellow-brown', 'Greenish'];
@@ -90,6 +91,7 @@ const MAX_GUIDE_WIDTH = WINDOW_DIMENSIONS.width - 32;
 const MAX_GUIDE_HEIGHT = WINDOW_DIMENSIONS.height * 0.78;
 const CAPTURE_GUIDE_WIDTH = Math.min(MAX_GUIDE_WIDTH, MAX_GUIDE_HEIGHT * WATER_CARD_ASPECT);
 const CAPTURE_GUIDE_HEIGHT = CAPTURE_GUIDE_WIDTH / WATER_CARD_ASPECT;
+const SUPABASE_SAMPLES_TABLE = process.env.EXPO_PUBLIC_SUPABASE_SAMPLES_TABLE || 'field_samples';
 const AUTO_CAPTURE_START_THRESHOLD = 0.55; // Lower threshold - fiducials are the main check
 const AUTO_CAPTURE_CANCEL_THRESHOLD = 0.35;
 const AUTO_CAPTURE_START_MS = 1200; // Faster capture once ready
@@ -782,7 +784,9 @@ const DataInputScreen = ({ onNavigate }) => {
   const handleSubmit = useCallback(async () => {
     setSubmitError('');
     setResultModalVisible(false);
-    const payload = buildSamplePayload();
+    const sessionResult = await supabase.auth.getSession();
+    const userId = sessionResult?.data?.session?.user?.id || null;
+    const payload = { ...buildSamplePayload(), userId };
     const numericValues = [
       payload.ph,
       payload.hardness,
@@ -804,7 +808,50 @@ const DataInputScreen = ({ onNavigate }) => {
     setSubmitLoading(true);
     try {
       const result = await submitWaterSample(payload);
-      setPredictionResult(result);
+      let resolvedResult = result;
+
+      if (!result?.saved && userId) {
+        const record = {
+          user_id: userId,
+          sample_label: null,
+          ph: payload.ph,
+          hardness: payload.hardness,
+          solids: payload.solids,
+          chloramines: payload.chloramines,
+          sulfate: payload.sulfate,
+          conductivity: payload.conductivity,
+          organic_carbon: payload.organicCarbon,
+          trihalomethanes: payload.trihalomethanes,
+          turbidity: payload.turbidity,
+          free_chlorine_residual: payload.freeChlorineResidual,
+          color: payload.color,
+          source: payload.source,
+          notes: null,
+          prediction_probability: result.probability,
+          prediction_is_potable: result.isPotable,
+          risk_level: result.riskLevel,
+          model_version: result.modelVersion,
+          anomaly_checks: result.checks || [],
+        };
+
+        const { data, error: insertError } = await supabase
+          .from(SUPABASE_SAMPLES_TABLE)
+          .insert(record)
+          .select('id')
+          .single();
+
+        if (!insertError && data?.id) {
+          resolvedResult = {
+            ...result,
+            saved: true,
+            sampleId: data.id,
+          };
+        } else if (insertError) {
+          console.warn('[Supabase] sample insert failed:', insertError.message || insertError);
+        }
+      }
+
+      setPredictionResult(resolvedResult);
       setResultModalVisible(true);
     } catch (error) {
       setSubmitError(error?.message || 'Failed to save and analyze sample.');
