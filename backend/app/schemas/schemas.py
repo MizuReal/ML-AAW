@@ -75,6 +75,33 @@ class ParameterCheck(BaseModel):
     recommended_range: Optional[List[float]] = Field(None, alias="recommendedRange")
 
 
+class MicrobialViolationItem(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, validate_by_name=True)
+    field: str
+    rule: str
+    value: Optional[float]
+    weight: int
+    bacteria: List[str]
+    health_risk: str = Field("", alias="healthRisk")
+    biofilm: str = ""
+    unit: str = ""
+
+
+class MicrobialRiskResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, validate_by_name=True)
+    microbial_risk_level: str = Field(..., alias="microbialRiskLevel")
+    microbial_risk_probabilities: Dict[str, float] = Field(..., alias="microbialRiskProbabilities")
+    microbial_score: int = Field(..., alias="microbialScore")
+    microbial_max_score: int = Field(..., alias="microbialMaxScore")
+    microbial_violations: List[MicrobialViolationItem] = Field(
+        default_factory=list, alias="microbialViolations"
+    )
+    possible_bacteria: List[str] = Field(default_factory=list, alias="possibleBacteria")
+    predicted_by_model: bool = Field(..., alias="predictedByModel")
+    model_version: str = Field(..., alias="modelVersion")
+    timestamp: str
+
+
 class PotabilityResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True, validate_by_name=True)
     is_potable: bool = Field(..., alias="isPotable")
@@ -89,4 +116,13 @@ class PotabilityResponse(BaseModel):
     saved: bool
     sample_id: Optional[str] = Field(None, alias="sampleId")
     message: str
+    # Microbial risk fields (integrated into potability response)
+    microbial_risk_level: Optional[str] = Field(None, alias="microbialRiskLevel")
+    microbial_risk_probabilities: Optional[Dict[str, float]] = Field(None, alias="microbialRiskProbabilities")
+    microbial_score: Optional[int] = Field(None, alias="microbialScore")
+    microbial_max_score: Optional[int] = Field(None, alias="microbialMaxScore")
+    microbial_violations: List[MicrobialViolationItem] = Field(
+        default_factory=list, alias="microbialViolations"
+    )
+    possible_bacteria: List[str] = Field(default_factory=list, alias="possibleBacteria")
 

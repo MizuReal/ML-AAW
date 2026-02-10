@@ -832,6 +832,9 @@ const DataInputScreen = ({ onNavigate }) => {
           risk_level: result.riskLevel,
           model_version: result.modelVersion,
           anomaly_checks: result.checks || [],
+          microbial_risk: result.microbialRiskLevel || null,
+          microbial_score: result.microbialScore ?? null,
+          possible_bacteria: result.possibleBacteria || [],
         };
 
         const { data, error: insertError } = await supabase

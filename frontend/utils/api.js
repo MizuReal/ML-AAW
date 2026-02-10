@@ -101,4 +101,28 @@ export async function submitWaterSample(sample) {
   return response.json();
 }
 
+/**
+ * Standalone microbial-risk assessment.
+ * Can be called independently or the result is already included
+ * in the potability response.
+ */
+export async function assessMicrobialRisk(sample) {
+  const response = await fetch(`${API_BASE_URL}/predict/microbial-risk`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(sample),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    const detail = payload?.detail || payload?.message;
+    throw new Error(detail || 'Unable to assess microbial risk.');
+  }
+
+  return response.json();
+}
+
 export { API_BASE_URL };

@@ -17,6 +17,11 @@ from sklearn.preprocessing import StandardScaler
 from app.core.config import get_settings
 from app.services.supabase_client import get_supabase_client
 
+# Lazy import to avoid circular dependency
+def _get_microbial_predictor():
+    from app.services.microbial_risk import get_microbial_risk_predictor
+    return get_microbial_risk_predictor()
+
 logger = logging.getLogger(__name__)
 
 # NOTE: Temporarily excluding "free_chlorine_residual" until dataset is available.
@@ -184,6 +189,14 @@ class PotabilityPredictor:
         risk_level = self._derive_risk(probability)
         checks = [self._build_check(col, features.get(col)) for col in FEATURE_COLUMNS]
 
+        # --- Microbial-risk assessment (integrated) ---
+        try:
+            microbial_predictor = _get_microbial_predictor()
+            microbial_result = microbial_predictor.predict(features, meta)
+        except Exception:
+            logger.exception("Microbial-risk prediction failed; continuing without it")
+            microbial_result = {}
+
         result = {
             "is_potable": is_potable,
             "probability": round(probability, 4),
@@ -197,6 +210,13 @@ class PotabilityPredictor:
             "saved": False,
             "sample_id": None,
             "message": self._build_summary(is_potable, risk_level),
+            # Microbial risk fields
+            "microbial_risk_level": microbial_result.get("microbial_risk_level"),
+            "microbial_risk_probabilities": microbial_result.get("microbial_risk_probabilities"),
+            "microbial_score": microbial_result.get("microbial_score"),
+            "microbial_max_score": microbial_result.get("microbial_max_score"),
+            "microbial_violations": microbial_result.get("microbial_violations", []),
+            "possible_bacteria": microbial_result.get("possible_bacteria", []),
         }
 
         sample_id = self._persist_sample(features, meta or {}, result)
@@ -288,6 +308,9 @@ class PotabilityPredictor:
             "prediction_probability": result["probability"],
             "prediction_is_potable": result["is_potable"],
             "risk_level": result["risk_level"],
+            "microbial_risk": result.get("microbial_risk_level"),
+            "microbial_score": result.get("microbial_score"),
+            "possible_bacteria": result.get("possible_bacteria", []),
             "model_version": result["model_version"],
             "anomaly_checks": result["checks"],
         }

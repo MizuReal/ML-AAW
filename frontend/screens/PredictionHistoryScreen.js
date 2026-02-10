@@ -108,6 +108,11 @@ const buildResultFromRow = (row) => ({
   saved: true,
   sampleId: row?.id || null,
   message: buildSummaryMessage(row),
+  // Microbial risk fields (stored in Supabase)
+  microbialRiskLevel: row?.microbial_risk || null,
+  microbialScore: Number.isFinite(row?.microbial_score) ? row.microbial_score : null,
+  microbialMaxScore: 14,
+  possibleBacteria: Array.isArray(row?.possible_bacteria) ? row.possible_bacteria : [],
 });
 
 const PredictionHistoryScreen = ({ onNavigate }) => {
@@ -150,7 +155,7 @@ const PredictionHistoryScreen = ({ onNavigate }) => {
         const { data, error } = await supabase
           .from(SUPABASE_SAMPLES_TABLE)
           .select(
-            'id, created_at, source, sample_label, color, risk_level, prediction_probability, prediction_is_potable, model_version, anomaly_checks'
+            'id, created_at, source, sample_label, color, risk_level, prediction_probability, prediction_is_potable, model_version, anomaly_checks, microbial_risk, microbial_score, possible_bacteria'
           )
           .eq('user_id', userId)
           .order('created_at', { ascending: false })

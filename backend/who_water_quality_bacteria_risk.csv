@@ -1,0 +1,11 @@
+Water Quality Parameter,WHO Threshold,Possible Health Risk,Biofilm Implication,Possible Bacteria
+pH,<6.5 or >8.5,"GI irritation, reduced disinfection efficiency",Biofilm formation,Escherichia coli; Salmonella spp.; Vibrio cholerae
+Hardness (CaCO3),>500 mg/L,"Scaling, aesthetic issues",Pipe scale biofilms,Legionella pneumophila; Pseudomonas aeruginosa
+Total Dissolved Solids,>1000 mg/L,"GI distress, dehydration",Mineral-associated biofilms,E. coli; Enterobacter spp.
+Chloramines,>3 mg/L or ineffective residual,"Eye, nose, stomach irritation",Chloramine-resistant biofilms,Mycobacterium avium; Legionella pneumophila; Pseudomonas aeruginosa
+Sulfate,>250 mg/L,"Diarrhea, dehydration",Anaerobic biofilms,Clostridium spp.; Desulfovibrio spp.; E. coli
+Conductivity,>1500 µS/cm,"Salinity stress, GI discomfort",Ion-rich biofilms,E. coli; Klebsiella spp.; Enterococcus spp.
+Total Organic Carbon,>5 mg/L,"Increased DBPs, microbial regrowth",Nutrient-rich biofilms,E. coli; Salmonella spp.; Campylobacter jejuni; Pseudomonas aeruginosa
+Trihalomethanes,>100 µg/L,Long-term cancer risk,Indirect indicator (organic contamination),E. coli; Enteric bacteria (risk-based)
+Turbidity,>5 NTU,"Pathogen shielding, infection risk",Particle-attached biofilms,E. coli; Vibrio cholerae; Salmonella spp.; Shigella spp.
+Free Chlorine Residual,<0.2 mg/L,Inadequate disinfection,Uncontrolled biofilm growth,E. coli; Vibrio cholerae; Salmonella typhi; Shigella spp.

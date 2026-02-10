@@ -10,6 +10,8 @@ import {
   Image,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
+import { decode } from 'base64-arraybuffer';
 import InputField from '../components/InputField';
 import PredictButton from '../components/PredictButton';
 import { supabase } from '../utils/supabaseClient';
@@ -116,19 +118,32 @@ const ProfileScreen = ({ onNavigate }) => {
       }
 
       setLoading(true);
-      const response = await fetch(asset.uri);
-      const blob = await response.blob();
       const filePath = `${user.id}.jpg`;
+      const base64Data = await FileSystem.readAsStringAsync(asset.uri, {
+        encoding: FileSystem.EncodingType?.Base64 || 'base64',
+      });
+      const fileBody = decode(base64Data);
+      const contentType = asset.mimeType || 'image/jpeg';
+
+      // Remove existing file first to avoid upsert RLS conflicts
+      await supabase.storage.from(SUPABASE_AVATAR_BUCKET).remove([filePath]);
 
       const { error: uploadError } = await supabase.storage
         .from(SUPABASE_AVATAR_BUCKET)
-        .upload(filePath, blob, {
-          upsert: true,
-          contentType: 'image/jpeg',
+        .upload(filePath, fileBody, {
+          contentType,
         });
 
       if (uploadError) {
-        console.warn('[Supabase] avatar upload failed:', uploadError.message || uploadError);
+        console.warn('[Supabase] avatar upload failed:', {
+          message: uploadError.message || uploadError,
+          statusCode: uploadError.statusCode,
+          error: uploadError,
+          bucket: SUPABASE_AVATAR_BUCKET,
+          filePath,
+          contentType,
+          userId: user.id,
+        });
         setStatus('Unable to upload avatar.');
         return;
       }
