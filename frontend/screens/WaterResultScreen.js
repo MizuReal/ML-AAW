@@ -1,6 +1,7 @@
-import React from 'react';
-import { Modal, View, Text, TouchableOpacity, ScrollView, SafeAreaView, Dimensions } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Modal, View, Text, TouchableOpacity, ScrollView, SafeAreaView, Dimensions, TextInput, ActivityIndicator } from 'react-native';
 import LottieView from 'lottie-react-native';
+import { getFiltrationSuggestion, chatWithGemini } from '../utils/api';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GAUGE_WIDTH = Math.min(SCREEN_WIDTH - 80, 280);
@@ -317,7 +318,7 @@ const buildBacteriaFrequency = (violations) => {
 	return Object.entries(freq).sort((a, b) => b[1].length - a[1].length);
 };
 
-const MicrobialRiskSection = ({ result }) => {
+const MicrobialRiskSection = ({ result, children }) => {
 	const riskLevel = result?.microbialRiskLevel || result?.microbial_risk_level;
 
 	// Debug: log to console so we can verify data presence
@@ -427,6 +428,9 @@ const MicrobialRiskSection = ({ result }) => {
 					</View>
 				)}
 			</View>
+
+			{/* ─── Injected content (e.g. Filtration chatbot) ─── */}
+			{children}
 
 			{/* ─── Violations Detail ─── */}
 			{violations.length > 0 && (
@@ -571,6 +575,179 @@ const MicrobialRiskSection = ({ result }) => {
 	);
 };
 
+/* ─── Self-contained Gemini filtration + chat card ─── */
+const FiltrationChatCard = ({ result }) => {
+	const [suggestion, setSuggestion] = useState(null);
+	const [suggestionLoading, setSuggestionLoading] = useState(false);
+	const [suggestionError, setSuggestionError] = useState('');
+	const [chatOpen, setChatOpen] = useState(false);
+	const [chatHistory, setChatHistory] = useState([]);
+	const [chatInput, setChatInput] = useState('');
+	const [chatLoading, setChatLoading] = useState(false);
+	const chatScrollRef = useRef(null);
+
+	useEffect(() => {
+		if (!result) return;
+		let cancelled = false;
+		setSuggestionLoading(true);
+		setSuggestionError('');
+		getFiltrationSuggestion(result)
+			.then((r) => { if (!cancelled) setSuggestion(r.suggestion); })
+			.catch((e) => { if (!cancelled) setSuggestionError(e?.message || 'Failed to get suggestion'); })
+			.finally(() => { if (!cancelled) setSuggestionLoading(false); });
+		return () => { cancelled = true; };
+	}, []);
+
+	const handleSendChat = useCallback(async () => {
+		const trimmed = chatInput.trim();
+		if (!trimmed || chatLoading) return;
+		const newHistory = [...chatHistory, { role: 'user', text: trimmed }];
+		setChatHistory(newHistory);
+		setChatInput('');
+		setChatLoading(true);
+		try {
+			const resp = await chatWithGemini(result, newHistory, trimmed);
+			setChatHistory((prev) => [...prev, { role: 'assistant', text: resp.reply }]);
+		} catch (e) {
+			setChatHistory((prev) => [...prev, { role: 'assistant', text: `Error: ${e?.message || 'Request failed'}` }]);
+		} finally {
+			setChatLoading(false);
+			setTimeout(() => chatScrollRef.current?.scrollToEnd?.({ animated: true }), 100);
+		}
+	}, [chatInput, chatLoading, chatHistory, result]);
+
+	const sendEnabled = !chatLoading && chatInput.trim().length > 0;
+
+	return (
+		<View className="mt-4 rounded-[28px] border border-sky-500/30 bg-sky-900/40 p-5">
+			<View className="flex-row items-center justify-between mb-2">
+				<View className="flex-row items-center gap-2">
+					<Text className="text-[14px]">💧</Text>
+					<Text className="text-[12px] font-semibold uppercase tracking-wide text-sky-300">
+						Filtration Recommendation
+					</Text>
+				</View>
+				<View className="rounded-full border border-sky-500/40 px-2 py-0.5">
+					<Text className="text-[9px] font-semibold text-sky-400">GEMINI AI</Text>
+				</View>
+			</View>
+
+			{suggestionLoading ? (
+				<View className="items-center py-6">
+					<ActivityIndicator color="#38bdf8" size="small" />
+					<Text className="text-[11px] text-sky-400 mt-2">Analyzing water treatment options...</Text>
+				</View>
+			) : suggestionError ? (
+				<View>
+					<Text className="text-[11px] text-rose-400">{suggestionError}</Text>
+					<TouchableOpacity
+						activeOpacity={0.85}
+						onPress={() => {
+							setSuggestionError('');
+							setSuggestionLoading(true);
+							getFiltrationSuggestion(result)
+								.then((r) => setSuggestion(r.suggestion))
+								.catch((e) => setSuggestionError(e?.message || 'Failed'))
+								.finally(() => setSuggestionLoading(false));
+						}}
+						className="mt-2 rounded-full border border-sky-500/40 bg-sky-500/10 px-3 py-1.5 self-start"
+					>
+						<Text className="text-[11px] font-semibold text-sky-300">Retry</Text>
+					</TouchableOpacity>
+				</View>
+			) : suggestion ? (
+				<Text className="text-[12px] text-slate-300 leading-[18px]">{suggestion}</Text>
+			) : null}
+
+			{/* Open chat button */}
+			{!chatOpen && (
+				<TouchableOpacity
+					activeOpacity={0.85}
+					onPress={() => setChatOpen(true)}
+					className="mt-4 rounded-2xl border border-slate-700 bg-slate-900/70 px-4 py-3"
+				>
+					<Text className="text-[12px] text-slate-400">
+						Have questions? Tap to chat with the AI about treatment options...
+					</Text>
+				</TouchableOpacity>
+			)}
+
+			{/* Inline chat */}
+			{chatOpen && (
+				<View className="mt-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-3">
+					<View className="flex-row items-center justify-between mb-2">
+						<Text className="text-[10px] font-semibold uppercase tracking-wide text-sky-400">
+							WaterOps Copilot
+						</Text>
+						<TouchableOpacity onPress={() => setChatOpen(false)} activeOpacity={0.8}>
+							<Text className="text-[11px] text-slate-500">Collapse</Text>
+						</TouchableOpacity>
+					</View>
+
+					<ScrollView
+						ref={chatScrollRef}
+						style={{ maxHeight: 240 }}
+						showsVerticalScrollIndicator={false}
+						contentContainerStyle={{ gap: 8, paddingBottom: 4 }}
+					>
+						{chatHistory.length === 0 && (
+							<Text className="text-[11px] text-slate-500 py-2">
+								Ask about treatment methods, cost alternatives, or WHO guidelines for this sample.
+							</Text>
+						)}
+						{chatHistory.map((msg, i) => (
+							<View
+								key={i}
+								className={msg.role === 'user'
+									? 'max-w-[85%] rounded-2xl px-3 py-2 self-end bg-sky-500/15 border border-sky-500/30'
+									: 'max-w-[85%] rounded-2xl px-3 py-2 self-start border border-slate-700 bg-slate-800/60'
+								}
+							>
+								<Text className="text-[11px] text-slate-200 leading-[16px]">{msg.text}</Text>
+							</View>
+						))}
+						{chatLoading && (
+							<View className="self-start flex-row items-center gap-2 px-3 py-2">
+								<ActivityIndicator color="#38bdf8" size="small" />
+								<Text className="text-[10px] text-sky-400">Thinking...</Text>
+							</View>
+						)}
+					</ScrollView>
+
+					<View className="mt-2 flex-row items-center gap-2">
+						<TextInput
+							className="flex-1 rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-2 text-[12px] text-sky-100"
+							placeholder="Ask about filtration..."
+							placeholderTextColor="#64748b"
+							value={chatInput}
+							onChangeText={setChatInput}
+							onSubmitEditing={handleSendChat}
+							returnKeyType="send"
+							editable={!chatLoading}
+							style={{ maxHeight: 60 }}
+							multiline
+						/>
+						<TouchableOpacity
+							activeOpacity={0.85}
+							onPress={handleSendChat}
+							className={sendEnabled
+								? 'rounded-xl px-3 py-2 bg-sky-500/80 border border-sky-400/40'
+								: 'rounded-xl px-3 py-2 bg-slate-800'
+							}
+							disabled={!sendEnabled}
+						>
+							<Text className={sendEnabled
+								? 'text-[12px] font-semibold text-slate-900'
+								: 'text-[12px] font-semibold text-slate-600'
+							}>Send</Text>
+						</TouchableOpacity>
+					</View>
+				</View>
+			)}
+		</View>
+	);
+};
+
 const WaterResultScreen = ({ visible, onClose, result }) => {
 	if (!result) {
 		return null;
@@ -657,8 +834,11 @@ const WaterResultScreen = ({ visible, onClose, result }) => {
 						</View>
 						{/* Microbial Risk Assessment — placed immediately after potability verdict */}
 						<MicrobialErrorBoundary>
-							<MicrobialRiskSection result={result} />
+							<MicrobialRiskSection result={result}>
+								<FiltrationChatCard result={result} />
+							</MicrobialRiskSection>
 						</MicrobialErrorBoundary>
+
 						{groupedChecks.map((group) => (
 							<View key={group.title} className="mt-6 rounded-[28px] border border-slate-900 bg-slate-950/70 p-5">
 								<Text className="text-[12px] font-semibold uppercase tracking-wide text-slate-400">
@@ -715,6 +895,7 @@ const WaterResultScreen = ({ visible, onClose, result }) => {
 								</View>
 							</View>
 						) : null}
+
 					</ScrollView>
 				</SafeAreaView>
 		</Modal>

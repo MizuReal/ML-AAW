@@ -125,4 +125,39 @@ export async function assessMicrobialRisk(sample) {
   return response.json();
 }
 
+/**
+ * One-shot: get a Gemini-powered filtration suggestion for the given analysis.
+ */
+export async function getFiltrationSuggestion(analysis) {
+  const response = await fetch(`${API_BASE_URL}/chat/filtration-suggestion`, {
+    method: 'POST',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ analysis }),
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    if (response.status === 429) {
+      throw new Error('AI rate limit reached — please wait a moment and retry.');
+    }
+    throw new Error(payload?.detail || 'Filtration suggestion failed.');
+  }
+  return response.json();
+}
+
+/**
+ * Multi-turn chat with Gemini, grounded in the water analysis context.
+ */
+export async function chatWithGemini(analysis, history, message) {
+  const response = await fetch(`${API_BASE_URL}/chat/message`, {
+    method: 'POST',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ analysis, history, message }),
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload?.detail || 'Chat request failed.');
+  }
+  return response.json();
+}
+
 export { API_BASE_URL };

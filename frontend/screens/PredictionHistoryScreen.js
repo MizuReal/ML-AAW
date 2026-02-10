@@ -9,6 +9,7 @@ import {
   Animated,
 } from 'react-native';
 import { supabase } from '../utils/supabaseClient';
+import { assessMicrobialRisk } from '../utils/api';
 import WaterResultScreen from './WaterResultScreen';
 
 const SUPABASE_SAMPLES_TABLE = process.env.EXPO_PUBLIC_SUPABASE_SAMPLES_TABLE || 'field_samples';
@@ -155,7 +156,7 @@ const PredictionHistoryScreen = ({ onNavigate }) => {
         const { data, error } = await supabase
           .from(SUPABASE_SAMPLES_TABLE)
           .select(
-            'id, created_at, source, sample_label, color, risk_level, prediction_probability, prediction_is_potable, model_version, anomaly_checks, microbial_risk, microbial_score, possible_bacteria'
+            'id, created_at, source, sample_label, color, risk_level, prediction_probability, prediction_is_potable, model_version, anomaly_checks, microbial_risk, microbial_score, possible_bacteria, ph, hardness, solids, chloramines, sulfate, conductivity, organic_carbon, trihalomethanes, turbidity'
           )
           .eq('user_id', userId)
           .order('created_at', { ascending: false })
@@ -269,9 +270,43 @@ const PredictionHistoryScreen = ({ onNavigate }) => {
           </Text>
           <TouchableOpacity
             activeOpacity={0.85}
-            onPress={() => {
+            onPress={async () => {
               if (canShowDetails) {
-                setDetailResult(buildResultFromRow(item._raw));
+                const row = item._raw;
+                let result = buildResultFromRow(row);
+
+                // If microbial risk wasn't stored, compute it on the fly
+                if (!result.microbialRiskLevel && row) {
+                  try {
+                    const sample = {
+                      ph: row.ph ?? null,
+                      hardness: row.hardness ?? null,
+                      solids: row.solids ?? null,
+                      chloramines: row.chloramines ?? null,
+                      sulfate: row.sulfate ?? null,
+                      conductivity: row.conductivity ?? null,
+                      organicCarbon: row.organic_carbon ?? null,
+                      trihalomethanes: row.trihalomethanes ?? null,
+                      turbidity: row.turbidity ?? null,
+                    };
+                    const microbial = await assessMicrobialRisk(sample);
+                    if (microbial?.microbialRiskLevel) {
+                      result = {
+                        ...result,
+                        microbialRiskLevel: microbial.microbialRiskLevel,
+                        microbialRiskProbabilities: microbial.microbialRiskProbabilities || {},
+                        microbialScore: microbial.microbialScore ?? null,
+                        microbialMaxScore: microbial.microbialMaxScore ?? 14,
+                        microbialViolations: microbial.microbialViolations || [],
+                        possibleBacteria: microbial.possibleBacteria || [],
+                      };
+                    }
+                  } catch (e) {
+                    console.warn('[History] on-the-fly microbial assessment failed:', e?.message);
+                  }
+                }
+
+                setDetailResult(result);
                 setDetailVisible(true);
               } else {
                 setSelectedId(isSelected ? null : item.id);

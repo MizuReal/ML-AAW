@@ -9,6 +9,7 @@ from app.routes.ocr import router as ocr_router
 from app.routes.fiducial import router as fiducial_router
 from app.routes.predict import router as predict_router
 from app.routes.microbial_risk import router as microbial_router
+from app.routes.chat import router as chat_router
 
 # Enable debug logging for fiducial detection
 logging.basicConfig(level=logging.DEBUG)
@@ -53,4 +54,23 @@ app.include_router(ocr_router, prefix="/ocr", tags=["ocr"])
 app.include_router(fiducial_router, prefix="/fiducial", tags=["fiducial"])
 app.include_router(predict_router, prefix="/predict", tags=["predict"])
 app.include_router(microbial_router, prefix="/predict", tags=["microbial-risk"])
+app.include_router(chat_router, prefix="/chat", tags=["chat"])
+
+# ── Startup diagnostics ──────────────────────────────────────────────
+logger = logging.getLogger(__name__)
+
+@app.on_event("startup")
+async def _log_routes() -> None:
+    routes = [r.path for r in app.routes if hasattr(r, "methods")]
+    logger.info("Registered API routes (%d):", len(routes))
+    for path in sorted(routes):
+        logger.info("  -> %s", path)
+
+
+@app.middleware("http")
+async def _request_logger(request: Request, call_next):
+    logger.info(">> %s %s", request.method, request.url.path)
+    response = await call_next(request)
+    logger.info("<< %s %s -> %s", request.method, request.url.path, response.status_code)
+    return response
 
