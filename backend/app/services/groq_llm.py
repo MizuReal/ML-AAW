@@ -1,4 +1,4 @@
-"""Thin wrapper around the Google Generative AI SDK (Gemini)."""
+"""Thin wrapper around the Groq SDK (Llama 3.3 70B) for water treatment chat."""
 
 from __future__ import annotations
 
@@ -15,14 +15,12 @@ try:
 except ImportError:
     pass  # python-dotenv not installed; rely on OS env
 
-from google import genai
-from google.genai import types
-from google.genai.errors import ClientError
+from groq import Groq, RateLimitError
 
 logger = logging.getLogger(__name__)
-logger.info("GEMINI_API_KEY present after dotenv: %s", bool(os.getenv("GEMINI_API_KEY")))
+logger.info("GROQ_API_KEY present after dotenv: %s", bool(os.getenv("GROQ_API_KEY")))
 
-_MODEL = "gemini-2.0-flash"
+_MODEL = "llama-3.3-70b-versatile"
 _MAX_RETRIES = 3
 _INITIAL_BACKOFF = 5  # seconds
 
@@ -41,18 +39,18 @@ FILTRATION_SYSTEM_PROMPT = (
 )
 
 
-_client_instance: Optional[genai.Client] = None
+_client_instance: Optional[Groq] = None
 
 
-def _get_client() -> genai.Client:
+def _get_client() -> Groq:
     global _client_instance
     if _client_instance is not None:
         return _client_instance
-    api_key = os.getenv("GEMINI_API_KEY", "")
-    logger.info("_get_client: GEMINI_API_KEY length=%d", len(api_key))
+    api_key = os.getenv("GROQ_API_KEY", "")
+    logger.info("_get_client: GROQ_API_KEY length=%d", len(api_key))
     if not api_key:
-        raise RuntimeError("GEMINI_API_KEY is not set in the environment")
-    _client_instance = genai.Client(api_key=api_key)
+        raise RuntimeError("GROQ_API_KEY is not set in the environment")
+    _client_instance = Groq(api_key=api_key)
     return _client_instance
 
 
@@ -61,10 +59,10 @@ def _call_with_retry(fn, *args, **kwargs):
     for attempt in range(_MAX_RETRIES):
         try:
             return fn(*args, **kwargs)
-        except ClientError as exc:
-            if exc.code == 429 and attempt < _MAX_RETRIES - 1:
+        except RateLimitError as exc:
+            if attempt < _MAX_RETRIES - 1:
                 wait = _INITIAL_BACKOFF * (2 ** attempt)
-                logger.warning("Gemini 429 rate-limited, retrying in %ds (attempt %d/%d)", wait, attempt + 1, _MAX_RETRIES)
+                logger.warning("Groq 429 rate-limited, retrying in %ds (attempt %d/%d)", wait, attempt + 1, _MAX_RETRIES)
                 time.sleep(wait)
             else:
                 raise
@@ -120,21 +118,21 @@ def _build_water_context(analysis: Dict) -> str:
 
 
 def get_filtration_suggestion(analysis: Dict) -> str:
-    """One-shot: build context from the analysis and ask Gemini for a filtration recommendation."""
+    """One-shot: build context from the analysis and ask Groq for a filtration recommendation."""
     client = _get_client()
     context = _build_water_context(analysis)
 
     response = _call_with_retry(
-        client.models.generate_content,
+        client.chat.completions.create,
         model=_MODEL,
-        contents=f"Here is the water quality analysis:\n\n{context}\n\nProvide your filtration recommendation.",
-        config=types.GenerateContentConfig(
-            system_instruction=FILTRATION_SYSTEM_PROMPT,
-            temperature=0.4,
-            max_output_tokens=512,
-        ),
+        messages=[
+            {"role": "system", "content": FILTRATION_SYSTEM_PROMPT},
+            {"role": "user", "content": f"Here is the water quality analysis:\n\n{context}\n\nProvide your filtration recommendation."},
+        ],
+        temperature=0.4,
+        max_tokens=512,
     )
-    return response.text or ""
+    return response.choices[0].message.content or ""
 
 
 def chat_message(
@@ -146,40 +144,26 @@ def chat_message(
     client = _get_client()
     context = _build_water_context(analysis)
 
-    contents: list[types.Content] = []
-
-    # Inject the water context as the first user turn so every reply is grounded
-    contents.append(types.Content(
-        role="user",
-        parts=[types.Part(text=f"Water quality analysis context:\n\n{context}")],
-    ))
-    contents.append(types.Content(
-        role="model",
-        parts=[types.Part(text="Understood. I have the water quality context. How can I help?")],
-    ))
+    messages: list[dict] = [
+        {"role": "system", "content": FILTRATION_SYSTEM_PROMPT},
+        # Inject the water context as the first user turn so every reply is grounded
+        {"role": "user", "content": f"Water quality analysis context:\n\n{context}"},
+        {"role": "assistant", "content": "Understood. I have the water quality context. How can I help?"},
+    ]
 
     # Replay prior conversation
     for msg in history:
-        role = "user" if msg.get("role") == "user" else "model"
-        contents.append(types.Content(
-            role=role,
-            parts=[types.Part(text=msg.get("text", ""))],
-        ))
+        role = "user" if msg.get("role") == "user" else "assistant"
+        messages.append({"role": role, "content": msg.get("text", "")})
 
     # Append the new user message
-    contents.append(types.Content(
-        role="user",
-        parts=[types.Part(text=user_message)],
-    ))
+    messages.append({"role": "user", "content": user_message})
 
     response = _call_with_retry(
-        client.models.generate_content,
+        client.chat.completions.create,
         model=_MODEL,
-        contents=contents,
-        config=types.GenerateContentConfig(
-            system_instruction=FILTRATION_SYSTEM_PROMPT,
-            temperature=0.5,
-            max_output_tokens=512,
-        ),
+        messages=messages,
+        temperature=0.5,
+        max_tokens=512,
     )
-    return response.text or ""
+    return response.choices[0].message.content or ""

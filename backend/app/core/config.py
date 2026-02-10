@@ -22,8 +22,8 @@ class Settings:
 		self.db_user: str = os.getenv("DB_USER", "")
 		self.db_password: str = os.getenv("DB_PASSWORD", "")
 
-		# Gemini
-		self.gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
+		# Gemini / Groq
+		self.groq_api_key: str = os.getenv("GROQ_API_KEY", "")
 
 		# FastAPI app
 		self.app_host: str = os.getenv("APP_HOST", "127.0.0.1")

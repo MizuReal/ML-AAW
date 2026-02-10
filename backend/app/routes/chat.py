@@ -1,4 +1,4 @@
-"""Chat / filtration-suggestion endpoints powered by Gemini."""
+"""Chat / filtration-suggestion endpoints powered by Groq (Llama 3.3 70B)."""
 
 from __future__ import annotations
 
@@ -8,12 +8,12 @@ from typing import Dict, List, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from app.services.gemini import chat_message, get_filtration_suggestion
+from app.services.groq_llm import chat_message, get_filtration_suggestion
 
 try:
-    from google.genai.errors import ClientError as GeminiClientError
+    from groq import RateLimitError as GroqRateLimitError
 except ImportError:
-    GeminiClientError = None  # type: ignore
+    GroqRateLimitError = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -56,12 +56,12 @@ def filtration_suggestion(body: FiltrationRequest) -> FiltrationResponse:
         text = get_filtration_suggestion(body.analysis)
         logger.info("  suggestion length: %d chars", len(text))
     except Exception as exc:
-        logger.exception("Gemini filtration suggestion failed")
+        logger.exception("Groq filtration suggestion failed")
         code = 502
         detail = str(exc)
-        if GeminiClientError and isinstance(exc, GeminiClientError) and exc.code == 429:
+        if GroqRateLimitError and isinstance(exc, GroqRateLimitError):
             code = 429
-            detail = "Gemini API rate limit reached. Please wait a moment and try again."
+            detail = "AI rate limit reached. Please wait a moment and try again."
         raise HTTPException(status_code=code, detail=detail) from exc
     return FiltrationResponse(suggestion=text)
 
@@ -76,11 +76,11 @@ def chat(body: ChatRequest) -> ChatResponse:
         reply = chat_message(body.analysis, history, body.message)
         logger.info("  reply length: %d chars", len(reply))
     except Exception as exc:
-        logger.exception("Gemini chat failed")
+        logger.exception("Groq chat failed")
         code = 502
         detail = str(exc)
-        if GeminiClientError and isinstance(exc, GeminiClientError) and exc.code == 429:
+        if GroqRateLimitError and isinstance(exc, GroqRateLimitError):
             code = 429
-            detail = "Gemini API rate limit reached. Please wait a moment and try again."
+            detail = "AI rate limit reached. Please wait a moment and try again."
         raise HTTPException(status_code=code, detail=detail) from exc
     return ChatResponse(reply=reply)

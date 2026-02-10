@@ -117,54 +117,98 @@ const ConfidenceGauge = ({ probability, threshold = 0.5 }) => {
 					{isAboveThreshold ? 'Above' : 'Below'} decision threshold ({Math.round(thresholdPos)}%)
 				</Text>
 			</View>
+
+			{/* ─── Prediction Analytics ─── */}
+			<PredictionAnalytics probability={probability} threshold={threshold} />
 			
-			{/* Confidence Breakdown */}
-			<View className="mt-4 rounded-xl border border-slate-800 bg-slate-900/40 p-3">
-				<Text className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 mb-2">
-					Prediction Analysis
-				</Text>
-				<View className="gap-2">
-					<ConfidenceMetric 
-						label="Certainty" 
-						value={Math.abs(probability - 0.5) * 2} 
-						description="Distance from uncertainty"
-					/>
-					<ConfidenceMetric 
-						label="Margin" 
-						value={Math.abs(probability - threshold)} 
-						description="Buffer from threshold"
-					/>
-					<ConfidenceMetric 
-						label="Reliability" 
-						value={probability >= 0.5 ? probability : 1 - probability} 
-						description="Prediction strength"
-					/>
-				</View>
-			</View>
 		</View>
 	);
 };
 
-const ConfidenceMetric = ({ label, value, description }) => {
-	const percentage = Math.round(value * 100);
-	const getBarColor = (val) => {
-		if (val >= 0.4) return 'bg-emerald-500';
-		if (val >= 0.2) return 'bg-amber-500';
-		return 'bg-rose-500';
-	};
-	
+/** Compact metric row with bar, value, and description */
+const AnalyticsMetric = ({ label, value, description, barColor }) => {
+	const pct = Math.round(value * 100);
+	const resolvedColor = barColor || (
+		pct >= 60 ? 'bg-emerald-500' : pct >= 30 ? 'bg-amber-500' : 'bg-rose-500'
+	);
 	return (
-		<View className="flex-row items-center gap-3">
-			<View className="w-16">
+		<View className="gap-1">
+			<View className="flex-row items-center justify-between">
 				<Text className="text-[10px] font-medium text-slate-300">{label}</Text>
+				<Text className="text-[11px] font-semibold text-slate-200">{pct}%</Text>
 			</View>
-			<View className="flex-1 h-1.5 rounded-full bg-slate-800 overflow-hidden">
-				<View 
-					className={`h-full rounded-full ${getBarColor(value)}`} 
-					style={{ width: `${percentage}%` }} 
+			<View className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+				<View
+					className={`h-full rounded-full ${resolvedColor}`}
+					style={{ width: `${pct}%` }}
 				/>
 			</View>
-			<Text className="text-[10px] text-slate-400 w-8 text-right">{percentage}%</Text>
+			<Text className="text-[9px] text-slate-500">{description}</Text>
+		</View>
+	);
+};
+
+/** Full analytics breakdown panel */
+const PredictionAnalytics = ({ probability, threshold }) => {
+	const p = probability;
+	const t = threshold;
+
+	// Certainty — how far from the 50/50 uncertainty point (0 = coin flip, 1 = fully certain)
+	const certainty = Math.abs(p - 0.5) * 2;
+	// Threshold margin — normalized distance from decision boundary
+	const margin = Math.min(Math.abs(p - t) / t, 1);
+	// Signal strength — dominant-class probability (always the "winning" side)
+	const signalStrength = p >= 0.5 ? p : 1 - p;
+	// Decision stability — would a ±5pp shift flip the result?
+	const distFromThreshold = Math.abs(p - t);
+	const stability = Math.min(distFromThreshold / 0.15, 1); // normalized: 15pp+ = fully stable
+
+	// Interpretation
+	const getVerdict = () => {
+		if (certainty >= 0.7 && stability >= 0.6)
+			return { text: 'Strong prediction — high certainty with stable margin from threshold.', color: 'text-emerald-400' };
+		if (certainty >= 0.4 && stability >= 0.3)
+			return { text: 'Moderate prediction — reasonable certainty but monitor for input sensitivity.', color: 'text-sky-400' };
+		if (stability < 0.3)
+			return { text: 'Borderline — small input changes could flip the outcome. Treat with caution.', color: 'text-amber-400' };
+		return { text: 'Weak signal — probability is close to uncertainty zone. Additional data recommended.', color: 'text-rose-400' };
+	};
+	const verdict = getVerdict();
+
+	return (
+		<View className="mt-4 rounded-xl border border-slate-800 bg-slate-900/40 p-3">
+			<Text className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 mb-3">
+				Prediction Analytics
+			</Text>
+			<View className="gap-3">
+				<AnalyticsMetric
+					label="Certainty"
+					value={certainty}
+					description="Distance from 50/50 uncertainty — higher means the model is more decisive"
+				/>
+				<AnalyticsMetric
+					label="Threshold Margin"
+					value={margin}
+					description={`Buffer from the ${Math.round(t * 100)}% decision boundary — larger margin = more room for error`}
+				/>
+				<AnalyticsMetric
+					label="Signal Strength"
+					value={signalStrength}
+					description="Dominant-class probability — raw strength of the predicted outcome"
+				/>
+				<AnalyticsMetric
+					label="Decision Stability"
+					value={stability}
+					description="Resilience to input perturbations — low means small changes could flip the result"
+					barColor={stability >= 0.5 ? 'bg-emerald-500' : stability >= 0.25 ? 'bg-amber-500' : 'bg-rose-500'}
+				/>
+			</View>
+			{/* Interpretation */}
+			<View className="mt-3 pt-3 border-t border-slate-800/60">
+				<Text className={`text-[11px] leading-[16px] ${verdict.color}`}>
+					{verdict.text}
+				</Text>
+			</View>
 		</View>
 	);
 };
@@ -300,9 +344,9 @@ const FIELD_DISPLAY_NAMES = {
 };
 
 const RISK_SUMMARIES = {
-	high: 'Multiple WHO thresholds exceeded. Elevated likelihood of pathogenic microbial contamination. Confirmatory lab testing strongly recommended.',
-	medium: 'Some WHO thresholds exceeded. Moderate microbial contamination indicators present. Monitoring and follow-up testing advised.',
-	low: 'Parameters are within acceptable ranges. Low microbial contamination risk based on current readings.',
+	high: 'Multiple WHO thresholds exceeded. Confirmatory lab testing strongly recommended.',
+	medium: 'Some thresholds exceeded. Follow-up monitoring advised.',
+	low: 'All parameters within acceptable ranges.',
 };
 
 /** Build a frequency map: bacterium → list of source parameter names */
@@ -326,12 +370,12 @@ const MicrobialRiskSection = ({ result, children }) => {
 
 	if (!riskLevel) {
 		return (
-			<View className="mt-6 rounded-[28px] border border-slate-700 bg-slate-900/60 p-5">
-				<Text className="text-[12px] font-semibold uppercase tracking-wide text-slate-400 mb-2">
-					Microbial Risk Assessment
+			<View className="mt-6 rounded-[28px] border border-slate-700 bg-slate-900/60 p-4">
+				<Text className="text-[12px] font-semibold uppercase tracking-wide text-slate-400">
+					Microbial Risk
 				</Text>
-				<Text className="text-[11px] text-slate-500">
-					Microbial risk data was not returned by the server. Ensure the backend is running the latest code and restart it.
+				<Text className="text-[11px] text-slate-500 mt-1">
+					Risk data unavailable. Check backend connection.
 				</Text>
 			</View>
 		);
@@ -558,24 +602,19 @@ const MicrobialRiskSection = ({ result, children }) => {
 				</View>
 			)}
 
-			{/* ─── Clean result ─── */}
 			{violations.length === 0 && (
-				<View className="mt-4 rounded-[28px] border border-emerald-500/20 bg-emerald-500/5 p-5">
-					<View className="flex-row items-center gap-2 mb-2">
-						<Text className="text-[16px]">✓</Text>
-						<Text className="text-[12px] font-semibold text-emerald-200">No Threshold Violations</Text>
+				<View className="mt-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3">
+					<View className="flex-row items-center gap-2">
+						<Text className="text-[14px]">✓</Text>
+						<Text className="text-[12px] font-semibold text-emerald-200">All parameters within WHO thresholds</Text>
 					</View>
-					<Text className="text-[11px] text-emerald-300/70 leading-[16px]">
-						All measured parameters fall within acceptable WHO-derived thresholds for this dataset. 
-						Microbial contamination risk is considered low based on the provided readings.
-					</Text>
 				</View>
 			)}
 		</View>
 	);
 };
 
-/* ─── Self-contained Gemini filtration + chat card ─── */
+/* ─── Filtration suggestion card + chat modal ─── */
 const FiltrationChatCard = ({ result }) => {
 	const [suggestion, setSuggestion] = useState(null);
 	const [suggestionLoading, setSuggestionLoading] = useState(false);
@@ -624,7 +663,7 @@ const FiltrationChatCard = ({ result }) => {
 				<View className="flex-row items-center gap-2">
 					<Text className="text-[14px]">💧</Text>
 					<Text className="text-[12px] font-semibold uppercase tracking-wide text-sky-300">
-						Filtration Recommendation
+						Filtration Advice
 					</Text>
 				</View>
 				<View className="rounded-full border border-sky-500/40 px-2 py-0.5">
@@ -633,9 +672,9 @@ const FiltrationChatCard = ({ result }) => {
 			</View>
 
 			{suggestionLoading ? (
-				<View className="items-center py-6">
+				<View className="items-center py-4">
 					<ActivityIndicator color="#38bdf8" size="small" />
-					<Text className="text-[11px] text-sky-400 mt-2">Analyzing water treatment options...</Text>
+					<Text className="text-[11px] text-sky-400 mt-2">Analyzing treatment options...</Text>
 				</View>
 			) : suggestionError ? (
 				<View>
@@ -659,91 +698,113 @@ const FiltrationChatCard = ({ result }) => {
 				<Text className="text-[12px] text-slate-300 leading-[18px]">{suggestion}</Text>
 			) : null}
 
-			{/* Open chat button */}
-			{!chatOpen && (
-				<TouchableOpacity
-					activeOpacity={0.85}
-					onPress={() => setChatOpen(true)}
-					className="mt-4 rounded-2xl border border-slate-700 bg-slate-900/70 px-4 py-3"
-				>
-					<Text className="text-[12px] text-slate-400">
-						Have questions? Tap to chat with the AI about treatment options...
-					</Text>
-				</TouchableOpacity>
-			)}
+			{/* Button to open chat modal */}
+			<TouchableOpacity
+				activeOpacity={0.85}
+				onPress={() => setChatOpen(true)}
+				className="mt-4 rounded-2xl border border-slate-700 bg-slate-900/70 px-4 py-3"
+			>
+				<Text className="text-[12px] text-slate-400">
+					Ask about treatment methods, costs, or WHO guidelines...
+				</Text>
+			</TouchableOpacity>
 
-			{/* Inline chat */}
-			{chatOpen && (
-				<View className="mt-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-3">
-					<View className="flex-row items-center justify-between mb-2">
-						<Text className="text-[10px] font-semibold uppercase tracking-wide text-sky-400">
-							WaterOps Copilot
-						</Text>
-						<TouchableOpacity onPress={() => setChatOpen(false)} activeOpacity={0.8}>
-							<Text className="text-[11px] text-slate-500">Collapse</Text>
-						</TouchableOpacity>
-					</View>
+			{/* ─── Chat Modal ─── */}
+			<Modal
+				visible={chatOpen}
+				animationType="fade"
+				transparent
+				onRequestClose={() => setChatOpen(false)}
+			>
+				<View className="flex-1 bg-black/70 px-5 py-10">
+					<View className="flex-1 justify-center">
+						<View className="max-h-[85%] rounded-[32px] border border-sky-900/80 bg-slate-950/95 p-5">
+							{/* Header */}
+							<View className="flex-row items-center justify-between">
+								<View>
+									<Text className="text-[16px] font-semibold text-sky-50">
+										WaterOps Copilot
+									</Text>
+									<Text className="text-[12px] text-slate-400">
+										Filtration & treatment assistant
+									</Text>
+								</View>
+								<TouchableOpacity
+									accessibilityRole="button"
+									accessibilityLabel="Close chat"
+									activeOpacity={0.8}
+									onPress={() => setChatOpen(false)}
+									className="h-10 w-10 items-center justify-center rounded-full border border-slate-800/70"
+								>
+									<Text className="text-[16px] font-semibold text-sky-100">✕</Text>
+								</TouchableOpacity>
+							</View>
 
-					<ScrollView
-						ref={chatScrollRef}
-						style={{ maxHeight: 240 }}
-						showsVerticalScrollIndicator={false}
-						contentContainerStyle={{ gap: 8, paddingBottom: 4 }}
-					>
-						{chatHistory.length === 0 && (
-							<Text className="text-[11px] text-slate-500 py-2">
-								Ask about treatment methods, cost alternatives, or WHO guidelines for this sample.
-							</Text>
-						)}
-						{chatHistory.map((msg, i) => (
-							<View
-								key={i}
-								className={msg.role === 'user'
-									? 'max-w-[85%] rounded-2xl px-3 py-2 self-end bg-sky-500/15 border border-sky-500/30'
-									: 'max-w-[85%] rounded-2xl px-3 py-2 self-start border border-slate-700 bg-slate-800/60'
-								}
+							{/* Messages */}
+							<ScrollView
+								ref={chatScrollRef}
+								className="mt-4"
+								contentContainerStyle={{ gap: 8, paddingBottom: 4 }}
+								showsVerticalScrollIndicator={false}
+								style={{ maxHeight: 360 }}
 							>
-								<Text className="text-[11px] text-slate-200 leading-[16px]">{msg.text}</Text>
-							</View>
-						))}
-						{chatLoading && (
-							<View className="self-start flex-row items-center gap-2 px-3 py-2">
-								<ActivityIndicator color="#38bdf8" size="small" />
-								<Text className="text-[10px] text-sky-400">Thinking...</Text>
-							</View>
-						)}
-					</ScrollView>
+								{chatHistory.length === 0 && (
+									<Text className="text-[11px] text-slate-500 py-3">
+										Ask about treatment methods, cost alternatives, or WHO guidelines for this sample.
+									</Text>
+								)}
+								{chatHistory.map((msg, i) => (
+									<View
+										key={i}
+										className={msg.role === 'user'
+											? 'max-w-[85%] rounded-2xl px-4 py-3 self-end bg-sky-500/15 border border-sky-500/30'
+											: 'max-w-[85%] rounded-2xl px-4 py-3 self-start border border-slate-800/80 bg-slate-900/80'
+										}
+									>
+										<Text className="text-[13px] text-sky-50 leading-[18px]">{msg.text}</Text>
+									</View>
+								))}
+								{chatLoading && (
+									<View className="self-start flex-row items-center gap-2 px-3 py-2">
+										<ActivityIndicator color="#38bdf8" size="small" />
+										<Text className="text-[10px] text-sky-400">Thinking...</Text>
+									</View>
+								)}
+							</ScrollView>
 
-					<View className="mt-2 flex-row items-center gap-2">
-						<TextInput
-							className="flex-1 rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-2 text-[12px] text-sky-100"
-							placeholder="Ask about filtration..."
-							placeholderTextColor="#64748b"
-							value={chatInput}
-							onChangeText={setChatInput}
-							onSubmitEditing={handleSendChat}
-							returnKeyType="send"
-							editable={!chatLoading}
-							style={{ maxHeight: 60 }}
-							multiline
-						/>
-						<TouchableOpacity
-							activeOpacity={0.85}
-							onPress={handleSendChat}
-							className={sendEnabled
-								? 'rounded-xl px-3 py-2 bg-sky-500/80 border border-sky-400/40'
-								: 'rounded-xl px-3 py-2 bg-slate-800'
-							}
-							disabled={!sendEnabled}
-						>
-							<Text className={sendEnabled
-								? 'text-[12px] font-semibold text-slate-900'
-								: 'text-[12px] font-semibold text-slate-600'
-							}>Send</Text>
-						</TouchableOpacity>
+							{/* Input */}
+							<View className="mt-4 flex-row items-center gap-3">
+								<TextInput
+									className="flex-1 rounded-2xl border border-slate-800/70 bg-slate-900/80 px-4 py-3 text-sky-100"
+									placeholder="Ask about filtration..."
+									placeholderTextColor="#94a3b8"
+									value={chatInput}
+									onChangeText={setChatInput}
+									onSubmitEditing={handleSendChat}
+									returnKeyType="send"
+									editable={!chatLoading}
+									multiline
+									style={{ maxHeight: 80 }}
+								/>
+								<TouchableOpacity
+									activeOpacity={0.85}
+									onPress={handleSendChat}
+									className={sendEnabled
+										? 'rounded-2xl border border-sky-400/60 bg-sky-500/80 px-4 py-3'
+										: 'rounded-2xl bg-slate-800 px-4 py-3'
+									}
+									disabled={!sendEnabled}
+								>
+									<Text className={sendEnabled
+										? 'text-[13px] font-semibold text-slate-950'
+										: 'text-[13px] font-semibold text-slate-600'
+									}>Send</Text>
+								</TouchableOpacity>
+							</View>
+						</View>
 					</View>
 				</View>
-			)}
+			</Modal>
 		</View>
 	);
 };
@@ -816,20 +877,12 @@ const WaterResultScreen = ({ visible, onClose, result }) => {
 								<ConfidenceGauge probability={result.probability} threshold={0.5} />
 								<View className="mt-4 pt-3 border-t border-slate-800">
 									<Text className="text-[11px] text-slate-500">
-										{timestampLabel} · {result.modelVersion}
-									</Text>
-									<Text className="text-[11px] text-slate-500">
-										Source: {result?.meta?.source || 'n/a'} · Color: {result?.meta?.color || 'n/a'}
-									</Text>
-									{result.sampleId ? (
-										<Text className="text-[11px] text-slate-500">Sample #{result.sampleId.slice(0, 8)}</Text>
-									) : null}
+									{timestampLabel} · {result.modelVersion}{result.sampleId ? ` · #${result.sampleId.slice(0, 8)}` : ''}
+								</Text>
 								</View>
 							</View>
-							<Text className={`mt-3 text-[12px] ${result.saved ? 'text-emerald-300' : 'text-slate-400'}`}>
-								{result.saved
-									? 'Sample synced to Supabase.'
-									: 'Cloud sync unavailable. Check Supabase credentials.'}
+						<Text className={`mt-3 text-[11px] ${result.saved ? 'text-emerald-400' : 'text-slate-500'}`}>
+							{result.saved ? '● Synced' : '○ Not synced'}
 							</Text>
 						</View>
 						{/* Microbial Risk Assessment — placed immediately after potability verdict */}
@@ -880,9 +933,6 @@ const WaterResultScreen = ({ visible, onClose, result }) => {
 							<View className="mt-6 rounded-[24px] border border-amber-500/30 bg-amber-500/5 p-4">
 								<Text className="text-[12px] font-semibold uppercase tracking-wide text-amber-200">
 									Missing inputs
-								</Text>
-								<Text className="mt-2 text-[12px] text-amber-100/80">
-									Provide these metrics next capture for tighter confidence intervals:
 								</Text>
 								<View className="mt-3 flex-row flex-wrap gap-2">
 									{missingFeatures.map((field) => (
