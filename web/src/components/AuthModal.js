@@ -149,13 +149,13 @@ export default function AuthModal({ open, mode = "login", onClose, onModeChange 
       <div className="modal-panel">
         <div className="flex items-center justify-between">
           <div className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.4em] text-cyan-200/80">AquaScope Access</p>
-            <h5 className="text-2xl text-white">{mode === "login" ? "Welcome back" : "Create an operator account"}</h5>
+            <p className="text-xs uppercase tracking-[0.4em] text-sky-600">AquaScope Access</p>
+            <h5 className="text-2xl text-slate-900">{mode === "login" ? "Welcome back" : "Create an operator account"}</h5>
           </div>
           <button
             type="button"
             aria-label="Close authentication modal"
-            className="rounded-full border border-white/20 bg-white/5 p-2 text-white transition hover:border-white/50"
+            className="rounded-full border border-slate-200 bg-slate-50 p-2 text-slate-500 transition hover:border-slate-300 hover:bg-slate-100"
             onClick={onClose}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -164,16 +164,16 @@ export default function AuthModal({ open, mode = "login", onClose, onModeChange 
           </button>
         </div>
 
-        <div className="mt-6 flex gap-2 rounded-full border border-white/10 bg-white/5 p-1 text-xs uppercase tracking-[0.3em] text-white">
+        <div className="mt-6 flex gap-2 rounded-full border border-slate-200 bg-slate-50 p-1 text-xs uppercase tracking-[0.3em] text-slate-600">
           <button
-            className={`flex-1 rounded-full px-4 py-2 transition ${mode === "login" ? "bg-white text-slate-900" : "text-white/70"}`}
+            className={`flex-1 rounded-full px-4 py-2 transition ${mode === "login" ? "bg-sky-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
             type="button"
             onClick={() => handleModeSwitch("login")}
           >
             Login
           </button>
           <button
-            className={`flex-1 rounded-full px-4 py-2 transition ${mode === "register" ? "bg-white text-slate-900" : "text-white/70"}`}
+            className={`flex-1 rounded-full px-4 py-2 transition ${mode === "register" ? "bg-sky-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
             type="button"
             onClick={() => handleModeSwitch("register")}
           >
@@ -185,8 +185,8 @@ export default function AuthModal({ open, mode = "login", onClose, onModeChange 
           <p
             className={`mt-4 rounded-2xl border px-4 py-3 text-xs ${
               feedback.type === "error"
-                ? "border-red-400/40 bg-red-500/10 text-red-100"
-                : "border-emerald-400/40 bg-emerald-500/10 text-emerald-100"
+                ? "border-red-200 bg-red-50 text-red-700"
+                : "border-emerald-200 bg-emerald-50 text-emerald-700"
             }`}
             role="status"
             aria-live="polite"
@@ -197,10 +197,10 @@ export default function AuthModal({ open, mode = "login", onClose, onModeChange 
 
         <form className="mt-8 space-y-4" onSubmit={handleSubmit} noValidate>
           {fields.map((field) => (
-            <label key={field.name} className="block text-sm text-slate-200">
-              <span className="text-xs uppercase tracking-[0.3em] text-white/60">{field.label}</span>
+            <label key={field.name} className="block text-sm text-slate-700">
+              <span className="text-xs uppercase tracking-[0.3em] text-slate-500">{field.label}</span>
               <input
-                className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-300/70"
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200"
                 type={field.type}
                 name={field.name}
                 placeholder={`Enter ${field.label.toLowerCase()}`}
@@ -213,22 +213,22 @@ export default function AuthModal({ open, mode = "login", onClose, onModeChange 
             </label>
           ))}
           {mode === "login" ? (
-            <div className="flex items-center justify-between text-xs text-white/60">
+            <div className="flex items-center justify-between text-xs text-slate-500">
               <label className="inline-flex items-center gap-2">
-                <input type="checkbox" className="h-4 w-4 rounded border-white/20 bg-transparent text-cyan-300 focus:ring-cyan-200" />
+                <input type="checkbox" className="h-4 w-4 rounded border-slate-300 bg-white text-sky-600 focus:ring-sky-200" />
                 Keep me signed in
               </label>
-              <button type="button" className="text-cyan-200 hover:text-cyan-100">
+              <button type="button" className="text-sky-600 hover:text-sky-700">
                 Forgot password?
               </button>
             </div>
           ) : (
-            <p className="text-xs text-white/60">By registering you agree to AquaScope platform terms and data policy.</p>
+            <p className="text-xs text-slate-500">By registering you agree to AquaScope platform terms and data policy.</p>
           )}
           <button
             type="submit"
-            className={`w-full rounded-full bg-gradient-to-r from-cyan-300 to-lime-200 py-3 text-sm font-semibold uppercase tracking-[0.4em] text-slate-900 transition ${
-              disableSubmit ? "opacity-40" : "hover:opacity-90"
+            className={`w-full rounded-full bg-sky-600 py-3 text-sm font-semibold uppercase tracking-[0.4em] text-white shadow-lg shadow-sky-600/25 transition ${
+              disableSubmit ? "opacity-40" : "hover:bg-sky-700"
             }`}
             disabled={disableSubmit}
             aria-busy={loading}
@@ -237,7 +237,7 @@ export default function AuthModal({ open, mode = "login", onClose, onModeChange 
           </button>
         </form>
 
-        <div className="mt-6 rounded-2xl border border-white/5 bg-black/30 p-4 text-xs text-white/60">
+        <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-500">
           We federate with Supabase Auth, Azure AD, and custom SAML. Contact support for enterprise SSO.
         </div>
       </div>

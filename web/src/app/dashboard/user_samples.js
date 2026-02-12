@@ -57,9 +57,9 @@ const buildDisplayRow = (row, type) => {
 };
 
 const STATUS_STYLES = {
-	Cleared: "border-emerald-400/40 bg-emerald-400/10 text-emerald-100",
-	Review: "border-amber-400/40 bg-amber-400/10 text-amber-100",
-	Alert: "border-rose-400/50 bg-rose-400/10 text-rose-100",
+	Cleared: "border-emerald-200 bg-emerald-50 text-emerald-700",
+	Review: "border-amber-200 bg-amber-50 text-amber-700",
+	Alert: "border-rose-200 bg-rose-50 text-rose-700",
 };
 
 const CONFIDENCE_BANDS = [
@@ -84,10 +84,10 @@ const getConfidenceAnimation = (value) => {
 };
 
 const CHECK_STYLES = {
-	ok: "border-emerald-400/30 bg-emerald-400/10 text-emerald-100",
-	warning: "border-amber-400/30 bg-amber-400/10 text-amber-100",
-	critical: "border-rose-400/40 bg-rose-400/10 text-rose-100",
-	missing: "border-slate-400/20 bg-slate-400/10 text-slate-200",
+	ok: "border-emerald-200 bg-emerald-50 text-emerald-700",
+	warning: "border-amber-200 bg-amber-50 text-amber-700",
+	critical: "border-rose-200 bg-rose-50 text-rose-700",
+	missing: "border-slate-200 bg-slate-50 text-slate-500",
 };
 
 const formatValue = (value, suffix = "") => {
@@ -192,21 +192,21 @@ export default function UserSamples() {
 	}, [activeTab]);
 
 	return (
-		<section className="glass-panel space-y-6 p-6">
+		<section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-6">
 			<div className="flex flex-wrap items-center justify-between gap-4">
 				<div>
-					<p className="text-xs uppercase tracking-[0.35em] text-white/70">
+					<p className="text-xs uppercase tracking-[0.35em] text-slate-500">
 						Prediction history
 					</p>
-					<p className="text-sm text-white/60">
+					<p className="text-sm text-slate-500">
 						Recent water-quality and container scans tied to your account.
 					</p>
 				</div>
-				<div className="flex rounded-full border border-white/10 bg-white/5 p-1 text-xs uppercase tracking-[0.3em]">
+				<div className="flex rounded-full border border-slate-200 bg-slate-50 p-1 text-xs uppercase tracking-[0.3em]">
 					<button
 						type="button"
 						className={`rounded-full px-4 py-2 transition ${
-							activeTab === "water" ? "bg-cyan-300 text-slate-900" : "text-white/70"
+							activeTab === "water" ? "bg-sky-600 text-white shadow-sm" : "text-slate-500"
 						}`}
 						onClick={() => setActiveTab("water")}
 					>
@@ -215,7 +215,7 @@ export default function UserSamples() {
 					<button
 						type="button"
 						className={`rounded-full px-4 py-2 transition ${
-							activeTab === "container" ? "bg-cyan-300 text-slate-900" : "text-white/70"
+							activeTab === "container" ? "bg-sky-600 text-white shadow-sm" : "text-slate-500"
 						}`}
 						onClick={() => setActiveTab("container")}
 					>
@@ -225,55 +225,55 @@ export default function UserSamples() {
 			</div>
 
 			{loading ? (
-				<div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
+				<div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
 					Loading your history...
 				</div>
 			) : null}
 
 			{error && !loading ? (
-				<div className="rounded-2xl border border-rose-400/30 bg-rose-400/10 p-4 text-sm text-rose-100">
+				<div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
 					{error}
 				</div>
 			) : null}
 
 			{!loading && !error && items.length === 0 ? (
-				<div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
+				<div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
 					No records yet. Run a scan to populate this history.
 				</div>
 			) : null}
 
 			<div className="grid gap-4 md:grid-cols-2">
 				{items.map((item) => {
-					const statusStyle = STATUS_STYLES[item.status] || "border-white/10 bg-white/5 text-white/70";
+					const statusStyle = STATUS_STYLES[item.status] || "border-slate-200 bg-slate-50 text-slate-500";
 					return (
-						<article key={item.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+						<article key={item.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
 							<div className="flex items-start justify-between gap-2">
 								<div>
-									<p className="text-xs uppercase tracking-[0.35em] text-white/60">
+									<p className="text-xs uppercase tracking-[0.35em] text-slate-500">
 										{activeTab === "water" ? "Sample" : "Container"}
 									</p>
-									<p className="text-base font-semibold text-white">{item.location}</p>
-									<p className="text-xs text-white/50">{item.id}</p>
+									<p className="text-base font-semibold text-slate-900">{item.location}</p>
+									<p className="text-xs text-slate-400">{item.id}</p>
 								</div>
 								<span className={`rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.3em] ${statusStyle}`}>
 									{item.status}
 								</span>
 							</div>
-							<div className="mt-3 text-sm text-white/70">{item.predictedClass}</div>
-							<div className="mt-2 flex items-center justify-between text-xs text-white/50">
+							<div className="mt-3 text-sm text-slate-600">{item.predictedClass}</div>
+							<div className="mt-2 flex items-center justify-between text-xs text-slate-400">
 								<span>{item.timestamp}</span>
 								<span>{Math.round(item.confidence * 100)}% confidence</span>
 							</div>
-							<div className="mt-3 h-1.5 w-full rounded-full bg-white/10">
+							<div className="mt-3 h-1.5 w-full rounded-full bg-slate-100">
 								<div
-									className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-lime-200"
+									className="h-full rounded-full bg-gradient-to-r from-sky-400 to-sky-600"
 									style={{ width: `${Math.min(100, Math.max(5, item.confidence * 100))}%` }}
 								/>
 							</div>
 							<div className="mt-4">
 								<button
 									type="button"
-									className="rounded-full border border-white/20 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white/70 transition hover:border-white/40"
+									className="rounded-full border border-slate-300 px-4 py-2 text-xs uppercase tracking-[0.3em] text-slate-600 transition hover:border-slate-400 hover:bg-slate-50"
 									onClick={() => {
 										setDetailItem(item);
 										setDetailOpen(true);
@@ -288,23 +288,23 @@ export default function UserSamples() {
 			</div>
 
 			{detailItem ? (
-				<div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/80 px-6 py-10">
+				<div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/30 backdrop-blur-sm px-6 py-10">
 					<div
-						className={`max-h-full w-full max-w-3xl overflow-y-auto rounded-3xl border border-white/10 bg-slate-950 p-6 shadow-2xl transition duration-200 ease-out ${
+						className={`max-h-full w-full max-w-3xl overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-xl transition duration-200 ease-out ${
 							detailOpen ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"
-						} [scrollbar-width:thin] [scrollbar-color:rgba(56,189,248,0.6)_transparent] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-cyan-300/40 [&::-webkit-scrollbar-track]:bg-transparent`}
+						}`}
 					>
 						<div className="flex flex-wrap items-start justify-between gap-4">
 							<div>
-								<p className="text-xs uppercase tracking-[0.35em] text-cyan-200/80">
+								<p className="text-xs uppercase tracking-[0.35em] text-sky-600">
 									{detailItem.type === "water" ? "Water quality detail" : "Container detail"}
 								</p>
-								<h2 className="text-2xl font-semibold text-white">{detailItem.location}</h2>
-								<p className="text-sm text-white/60">{detailItem.timestamp}</p>
+								<h2 className="text-2xl font-semibold text-slate-900">{detailItem.location}</h2>
+								<p className="text-sm text-slate-500">{detailItem.timestamp}</p>
 							</div>
 							<button
 								type="button"
-								className="rounded-full border border-white/20 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white/70"
+								className="rounded-full border border-slate-300 px-4 py-2 text-xs uppercase tracking-[0.3em] text-slate-500 hover:bg-slate-50"
 								onClick={() => {
 									setDetailOpen(false);
 									setTimeout(() => setDetailItem(null), 180);
@@ -315,7 +315,7 @@ export default function UserSamples() {
 						</div>
 
 						<div className="mt-6 flex flex-wrap items-center gap-6">
-							<div className="h-28 w-28 rounded-2xl border border-white/10 bg-white/5 p-2">
+							<div className="h-28 w-28 rounded-2xl border border-slate-200 bg-slate-50 p-2">
 								<Lottie
 									animationData={getConfidenceAnimation(detailItem.confidence)}
 									loop
@@ -323,73 +323,73 @@ export default function UserSamples() {
 								/>
 							</div>
 							<div className="flex-1 space-y-2">
-								<p className="text-xs uppercase tracking-[0.3em] text-white/60">
+								<p className="text-xs uppercase tracking-[0.3em] text-slate-500">
 									Confidence signal
 								</p>
-								<p className="text-3xl font-semibold text-white">
+								<p className="text-3xl font-semibold text-slate-900">
 									{Math.round(detailItem.confidence * 100)}%
 								</p>
-								<p className="text-sm text-white/60">
+								<p className="text-sm text-slate-500">
 									{getConfidenceMeta(detailItem.confidence).label} confidence tier
 								</p>
 							</div>
 						</div>
 
 						<div className="mt-6 grid gap-4 md:grid-cols-3">
-							<div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-								<p className="text-xs uppercase tracking-[0.3em] text-white/60">Model verdict</p>
-								<p className="mt-2 text-lg font-semibold text-white">{detailItem.predictedClass}</p>
-								<p className="mt-2 text-xs text-white/50">Risk level: {detailItem.raw?.risk_level || "n/a"}</p>
+							<div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+								<p className="text-xs uppercase tracking-[0.3em] text-slate-500">Model verdict</p>
+								<p className="mt-2 text-lg font-semibold text-slate-900">{detailItem.predictedClass}</p>
+								<p className="mt-2 text-xs text-slate-400">Risk level: {detailItem.raw?.risk_level || "n/a"}</p>
 							</div>
-							<div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-								<p className="text-xs uppercase tracking-[0.3em] text-white/60">Model version</p>
-								<p className="mt-2 text-lg font-semibold text-white">
+							<div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+								<p className="text-xs uppercase tracking-[0.3em] text-slate-500">Model version</p>
+								<p className="mt-2 text-lg font-semibold text-slate-900">
 									{detailItem.raw?.model_version || "unavailable"}
 								</p>
-								<p className="mt-2 text-xs text-white/50">Sample ID: {detailItem.id}</p>
+								<p className="mt-2 text-xs text-slate-400">Sample ID: {detailItem.id}</p>
 							</div>
-							<div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-								<p className="text-xs uppercase tracking-[0.3em] text-white/60">Confidence</p>
-								<p className="mt-2 text-lg font-semibold text-white">
+							<div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+								<p className="text-xs uppercase tracking-[0.3em] text-slate-500">Confidence</p>
+								<p className="mt-2 text-lg font-semibold text-slate-900">
 									{Math.round(detailItem.confidence * 100)}%
 								</p>
-								<p className="mt-2 text-xs text-white/50">
+								<p className="mt-2 text-xs text-slate-400">
 									{getConfidenceMeta(detailItem.confidence).label} confidence
 								</p>
 							</div>
 						</div>
 
-						<div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4">
+						<div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
 							<div className="flex items-center justify-between">
-								<p className="text-xs uppercase tracking-[0.3em] text-white/60">Confidence analysis</p>
+								<p className="text-xs uppercase tracking-[0.3em] text-slate-500">Confidence analysis</p>
 								<span
-									className={`rounded-full px-3 py-1 text-xs uppercase tracking-[0.3em] text-slate-900 ${getConfidenceMeta(detailItem.confidence).color}`}
+									className={`rounded-full px-3 py-1 text-xs uppercase tracking-[0.3em] text-white ${getConfidenceMeta(detailItem.confidence).color}`}
 								>
 									{getConfidenceMeta(detailItem.confidence).label}
 								</span>
 							</div>
-							<div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/10">
+							<div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-200">
 								<div
-									className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-lime-200"
+									className="h-full rounded-full bg-gradient-to-r from-sky-400 to-sky-600"
 									style={{ width: `${Math.min(100, Math.max(5, detailItem.confidence * 100))}%` }}
 								/>
 							</div>
-							<div className="mt-3 grid gap-3 text-xs text-white/60 md:grid-cols-3">
-								<div className="rounded-xl border border-white/10 bg-white/5 p-3">
-									<p className="text-[10px] uppercase tracking-[0.3em] text-white/50">Certainty</p>
-									<p className="mt-2 text-base font-semibold text-white">
+							<div className="mt-3 grid gap-3 text-xs text-slate-500 md:grid-cols-3">
+								<div className="rounded-xl border border-slate-200 bg-white p-3">
+									<p className="text-[10px] uppercase tracking-[0.3em] text-slate-400">Certainty</p>
+									<p className="mt-2 text-base font-semibold text-slate-900">
 										{Math.round(Math.abs(detailItem.confidence - 0.5) * 200)}%
 									</p>
 								</div>
-								<div className="rounded-xl border border-white/10 bg-white/5 p-3">
-									<p className="text-[10px] uppercase tracking-[0.3em] text-white/50">Margin</p>
-									<p className="mt-2 text-base font-semibold text-white">
+								<div className="rounded-xl border border-slate-200 bg-white p-3">
+									<p className="text-[10px] uppercase tracking-[0.3em] text-slate-400">Margin</p>
+									<p className="mt-2 text-base font-semibold text-slate-900">
 										{Math.round(Math.abs(detailItem.confidence - 0.58) * 100)}%
 									</p>
 								</div>
-								<div className="rounded-xl border border-white/10 bg-white/5 p-3">
-									<p className="text-[10px] uppercase tracking-[0.3em] text-white/50">Reliability</p>
-									<p className="mt-2 text-base font-semibold text-white">
+								<div className="rounded-xl border border-slate-200 bg-white p-3">
+									<p className="text-[10px] uppercase tracking-[0.3em] text-slate-400">Reliability</p>
+									<p className="mt-2 text-base font-semibold text-slate-900">
 										{Math.round((detailItem.confidence >= 0.5 ? detailItem.confidence : 1 - detailItem.confidence) * 100)}%
 									</p>
 								</div>
@@ -397,9 +397,9 @@ export default function UserSamples() {
 						</div>
 
 						<div className="mt-6 grid gap-4 md:grid-cols-2">
-							<div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-								<p className="text-xs uppercase tracking-[0.3em] text-white/60">Sample context</p>
-								<div className="mt-3 space-y-2 text-sm text-white/70">
+							<div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+								<p className="text-xs uppercase tracking-[0.3em] text-slate-500">Sample context</p>
+								<div className="mt-3 space-y-2 text-sm text-slate-600">
 									<div className="flex items-center justify-between">
 										<span>Source</span>
 										<span>{detailItem.raw?.source || "n/a"}</span>
@@ -418,34 +418,34 @@ export default function UserSamples() {
 									</div>
 								</div>
 							</div>
-							<div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-								<p className="text-xs uppercase tracking-[0.3em] text-white/60">Anomaly checks</p>
+							<div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+								<p className="text-xs uppercase tracking-[0.3em] text-slate-500">Anomaly checks</p>
 								{Array.isArray(detailItem.raw?.anomaly_checks) && detailItem.raw.anomaly_checks.length ? (
-									<div className="mt-3 space-y-2 text-sm text-white/70">
+									<div className="mt-3 space-y-2 text-sm text-slate-600">
 										{detailItem.raw.anomaly_checks.map((check, index) => (
 											<div
 												key={`${check.field || "check"}-${index}`}
 												className={`rounded-xl border p-3 ${
-													CHECK_STYLES[check.status] || "border-white/10 bg-white/5 text-white/70"
+													CHECK_STYLES[check.status] || "border-slate-200 bg-white text-slate-600"
 												}`}
 											>
 												<div className="flex items-center justify-between">
-													<span className="font-semibold text-white">
+													<span className="font-semibold text-slate-900">
 														{check.label || check.field || "Metric"}
 													</span>
 													<span className="text-xs uppercase tracking-[0.3em]">
 														{check.status || "ok"}
 													</span>
 												</div>
-												<p className="mt-2 text-xs text-white/60">
+												<p className="mt-2 text-xs text-slate-500">
 													Observed: {formatValue(check.value)}
 												</p>
-												<p className="mt-1 text-xs text-white/50">{check.detail || "No detail provided."}</p>
+												<p className="mt-1 text-xs text-slate-400">{check.detail || "No detail provided."}</p>
 											</div>
 										))}
 									</div>
 								) : (
-									<p className="mt-3 text-sm text-white/60">No anomaly checks available.</p>
+									<p className="mt-3 text-sm text-slate-500">No anomaly checks available.</p>
 								)}
 							</div>
 						</div>

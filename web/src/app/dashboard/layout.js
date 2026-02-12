@@ -40,20 +40,20 @@ export default function DashboardLayout({ children }) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
+    <div className="min-h-screen bg-slate-50 text-slate-900">
       <div className="flex">
         <aside
-          className={`${sidebarWidth} sticky top-0 flex h-screen flex-col border-r border-white/10 bg-gradient-to-b from-[#030a18] via-[#050f22] to-[#040a16] px-4 py-6 transition-all duration-300 ease-out`}
+          className={`${sidebarWidth} sticky top-0 flex h-screen flex-col border-r border-slate-200 bg-white px-4 py-6 transition-all duration-300 ease-out`}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold tracking-[0.4em] text-cyan-200">AQ</span>
-              {!collapsed && <p className="text-sm text-white/70">Console</p>}
+              <span className="text-xs font-semibold tracking-[0.4em] text-sky-600">AQ</span>
+              {!collapsed && <p className="text-sm text-slate-500">Console</p>}
             </div>
             <button
               type="button"
               aria-label="Toggle sidebar"
-              className="rounded-full border border-white/20 bg-white/5 p-2 text-white"
+              className="rounded-full border border-slate-200 bg-slate-50 p-2 text-slate-500 hover:bg-slate-100"
               onClick={() => setCollapsed((prev) => !prev)}
             >
               <svg
@@ -74,23 +74,23 @@ export default function DashboardLayout({ children }) {
                 key={item.label}
                 className={`flex w-full items-center gap-3 rounded-2xl border border-transparent px-3 py-3 text-left text-sm uppercase tracking-[0.35em] transition ${
                   activeItem === item.label
-                    ? "border-white/20 bg-white/10 text-white"
-                    : "text-white/60 hover:border-white/10 hover:bg-white/5"
+                    ? "border-sky-200 bg-sky-50 text-sky-700"
+                    : "text-slate-500 hover:border-slate-200 hover:bg-slate-50"
                 }`}
                 onClick={() => handleNavItemClick(item)}
               >
-                <span className="h-2 w-2 rounded-full bg-lime-200" />
+                <span className="h-2 w-2 rounded-full bg-sky-400" />
                 {!collapsed && <span>{item.label}</span>}
               </button>
             ))}
           </nav>
-          <div className="mt-auto space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-white/60">
+          <div className="mt-auto space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-500">
             <p>Samples today: 212</p>
             <p>Anomalies: 14</p>
             <p>Compliance: 99.1%</p>
           </div>
           {!collapsed && (
-            <Link href="/" className="mt-3 text-xs uppercase tracking-[0.4em] text-cyan-200">
+            <Link href="/" className="mt-3 text-xs uppercase tracking-[0.4em] text-sky-600">
               Back to site
             </Link>
           )}

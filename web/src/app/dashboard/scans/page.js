@@ -57,13 +57,13 @@ export default function ScansPage() {
 
   if (configMissing) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-center text-white">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-6 text-center text-slate-900">
         <div className="max-w-md space-y-4">
           <p className="text-xl font-semibold">Configure Supabase auth</p>
-          <p className="text-sm text-white/70">
+          <p className="text-sm text-slate-500">
             Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to web/.env.local so we can secure the scans route.
           </p>
-          <Link className="text-sm uppercase tracking-[0.3em] text-cyan-200" href="/">
+          <Link className="text-sm uppercase tracking-[0.3em] text-sky-600" href="/">
             Return home
           </Link>
         </div>
@@ -73,11 +73,11 @@ export default function ScansPage() {
 
   if (authError) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-center text-white">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-6 text-center text-slate-900">
         <div className="max-w-md space-y-4">
           <p className="text-xl font-semibold">Authentication unavailable</p>
-          <p className="text-sm text-white/70">{authError}</p>
-          <Link className="text-sm uppercase tracking-[0.3em] text-cyan-200" href="/">
+          <p className="text-sm text-slate-500">{authError}</p>
+          <Link className="text-sm uppercase tracking-[0.3em] text-sky-600" href="/">
             Return home
           </Link>
         </div>
@@ -87,10 +87,10 @@ export default function ScansPage() {
 
   if (checking) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-center text-white">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-6 text-center text-slate-900">
         <div className="space-y-4">
           <p className="text-xl font-semibold">Verifying your session...</p>
-          <p className="text-sm text-white/70">Hang tight while we secure your workspace.</p>
+          <p className="text-sm text-slate-500">Hang tight while we secure your workspace.</p>
         </div>
       </div>
     );
@@ -98,11 +98,11 @@ export default function ScansPage() {
 
   if (!authReady) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-center text-white">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-6 text-center text-slate-900">
         <div className="space-y-4">
           <p className="text-xl font-semibold">Please sign in</p>
-          <p className="text-sm text-white/70">Log in to view your scan history.</p>
-          <Link className="text-sm uppercase tracking-[0.3em] text-cyan-200" href="/">
+          <p className="text-sm text-slate-500">Log in to view your scan history.</p>
+          <Link className="text-sm uppercase tracking-[0.3em] text-sky-600" href="/">
             Return home
           </Link>
         </div>
@@ -111,12 +111,12 @@ export default function ScansPage() {
   }
 
   return (
-    <section className="px-6 py-10 text-white lg:px-12">
+    <section className="px-6 py-10 text-slate-900 lg:px-12">
       <div className="mx-auto flex max-w-5xl flex-col gap-6">
         <header className="space-y-2">
-          <p className="text-xs uppercase tracking-[0.4em] text-cyan-200/80">My scans</p>
+          <p className="text-xs uppercase tracking-[0.4em] text-sky-600">My scans</p>
           <h1 className="text-3xl font-semibold">Prediction history</h1>
-          <p className="text-sm text-white/60">All samples linked to your account.</p>
+          <p className="text-sm text-slate-500">All samples linked to your account.</p>
         </header>
         <UserSamples />
       </div>
