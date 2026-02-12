@@ -114,6 +114,14 @@ const carouselSlides = [
   },
 ];
 
+const carouselTextAccents = {
+  sky: "text-sky-300",
+  emerald: "text-emerald-300",
+  amber: "text-amber-300",
+  violet: "text-violet-300",
+  rose: "text-rose-300",
+};
+
 /* ── Steps ────────────────────────────────────────────────── */
 const steps = [
   {
@@ -219,6 +227,15 @@ const stats = [
   { label: "Risk categories", value: "4" },
 ];
 
+const tickerLabels = [
+  { label: "WHO Guidelines", color: "text-amber-400", dot: "bg-amber-400" },
+  { label: "Supabase", color: "text-emerald-400", dot: "bg-emerald-400" },
+  { label: "Groq AI", color: "text-violet-400", dot: "bg-violet-400" },
+  { label: "React Native", color: "text-sky-400", dot: "bg-sky-400" },
+  { label: "Next.js", color: "text-indigo-300", dot: "bg-indigo-300" },
+  { label: "FastAPI", color: "text-rose-400", dot: "bg-rose-400" },
+];
+
 /* ══════════════════════════════════════════════════════════════
    Image Carousel Component
    ══════════════════════════════════════════════════════════════ */
@@ -236,6 +253,7 @@ function ImageCarousel() {
   }, [next]);
 
   const slide = carouselSlides[current];
+  const accentTextClass = carouselTextAccents[slide.accent] || "text-white";
 
   return (
     <div className="carousel-root relative overflow-hidden bg-white">
@@ -270,7 +288,7 @@ function ImageCarousel() {
 
         {/* text overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10">
-          <h3 className="text-2xl font-bold text-white sm:text-3xl">{slide.title}</h3>
+          <h3 className={`text-2xl font-bold sm:text-3xl ${accentTextClass}`}>{slide.title}</h3>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/80 sm:text-base">
             {slide.description}
           </p>
@@ -381,23 +399,10 @@ export default function Home() {
         <section className="border-y border-slate-200 bg-slate-50 py-5">
           <div className="overflow-hidden">
             <div className="ticker-track whitespace-nowrap text-sm font-medium uppercase tracking-[0.3em] text-slate-400">
-              {[
-                "WHO Guidelines",
-                "Supabase",
-                "Groq AI",
-                "React Native",
-                "Next.js",
-                "FastAPI",
-                "WHO Guidelines",
-                "Supabase",
-                "Groq AI",
-                "React Native",
-                "Next.js",
-                "FastAPI",
-              ].map((label, i) => (
-                <span key={`${label}-${i}`} className="inline-flex items-center gap-4 pr-4">
-                  {label}
-                  <span className="h-1 w-1 rounded-full bg-slate-300" />
+              {[...tickerLabels, ...tickerLabels].map((item, i) => (
+                <span key={`${item.label}-${i}`} className={`inline-flex items-center gap-4 pr-4 ${item.color}`}>
+                  {item.label}
+                  <span className={`h-1 w-1 rounded-full ${item.dot}`} />
                 </span>
               ))}
             </div>
@@ -460,9 +465,9 @@ export default function Home() {
               <Reveal><p className="text-center text-sm font-medium uppercase tracking-[0.2em] text-slate-400">
                 How it works — step by step
               </p></Reveal>
-              <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+              <div className="mt-8 grid items-stretch gap-6 md:grid-cols-2 xl:grid-cols-4">
                 {steps.map((step, i) => (
-                  <Reveal key={step.number} delay={i * 120}><article className="step-card flex flex-col p-8">
+                  <Reveal key={step.number} delay={i * 120} className="h-full"><article className="step-card flex h-full flex-col p-8">
                     <div className="flex items-center justify-between">
                       <div
                         className={`flex h-14 w-14 items-center justify-center rounded-2xl border ${step.color}`}
