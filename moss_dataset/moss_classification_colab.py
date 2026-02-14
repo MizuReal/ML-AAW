@@ -237,35 +237,74 @@ from google.colab import files
 files.download('moss_classifier_mobilenetv2.keras')
 files.download('moss_classifier.tflite')
 
-# %% [13] Single Image Prediction (utility function)
-def predict_image(image_path, model, class_names):
-    """Predict moss level for a single image."""
+# %% [13] Robust Prediction (rejects out-of-domain images)
+CONFIDENCE_THRESHOLD = 85.0   # minimum top-class confidence %
+ENTROPY_THRESHOLD = 0.6       # max allowed entropy (uniform = 1.39 for 4 classes)
+
+def compute_entropy(probs):
+    """Shannon entropy of prediction distribution."""
+    probs = np.clip(probs, 1e-10, 1.0)
+    return -np.sum(probs * np.log(probs))
+
+def predict_image(image_path, model, class_names,
+                  conf_threshold=CONFIDENCE_THRESHOLD,
+                  ent_threshold=ENTROPY_THRESHOLD):
+    """Predict moss level with out-of-domain rejection."""
     img = tf.keras.preprocessing.image.load_img(image_path, target_size=IMG_SIZE)
     img_array = tf.keras.preprocessing.image.img_to_array(img) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
 
     pred = model.predict(img_array, verbose=0)[0]
-    label = class_names[np.argmax(pred)]
+    top_idx = np.argmax(pred)
     confidence = np.max(pred) * 100
+    entropy = compute_entropy(pred)
 
-    plt.imshow(tf.keras.preprocessing.image.load_img(image_path, target_size=IMG_SIZE))
-    plt.title(f'{label} ({confidence:.1f}%)')
+    # Rejection logic: low confidence OR high entropy = not a valid container image
+    is_valid = confidence >= conf_threshold and entropy <= ent_threshold
+
+    if is_valid:
+        label = class_names[top_idx]
+        title = f'{label} ({confidence:.1f}%)'
+        color = 'green'
+    else:
+        label = 'Unknown'
+        title = (f'NOT RECOGNIZED\n'
+                 f'Top guess: {class_names[top_idx]} ({confidence:.1f}%)\n'
+                 f'Entropy: {entropy:.2f} (too uncertain)')
+        color = 'red'
+
+    plt.figure(figsize=(5, 5))
+    plt.imshow(img)
+    plt.title(title, color=color, fontsize=11)
     plt.axis('off')
     plt.show()
 
-    return label, confidence
+    # Print all class probabilities for transparency
+    print(f"  Probabilities: ", end="")
+    for i, name in enumerate(class_names):
+        print(f"{name}: {pred[i]*100:.1f}%", end="  ")
+    print(f"\n  Entropy: {entropy:.3f} (threshold: {ent_threshold})")
+    print(f"  Confidence: {confidence:.1f}% (threshold: {conf_threshold}%)")
+
+    return label, confidence, is_valid
 
 # Example usage:
 # predict_image('dataset/test/HeavyMoss/some_image.jpg', model, CLASS_NAMES)
 
-# %% [14] Upload & Test Your Own Image
+# %% [14] Upload & Test Your Own Images (re-run this cell each time)
 from google.colab import files
-from IPython.display import display
 
-print("Upload an image to classify:")
+print("Upload one or more images to classify:")
+print("(Random / non-container images will be flagged as Unknown)\n")
 uploaded = files.upload()
 
 for filename in uploaded.keys():
-    print(f"\n--- Predicting: {filename} ---")
-    label, confidence = predict_image(filename, model, CLASS_NAMES)
-    print(f"Result: {label} ({confidence:.1f}% confidence)")
+    print(f"\n{'='*50}")
+    print(f"File: {filename}")
+    print(f"{'='*50}")
+    label, confidence, is_valid = predict_image(filename, model, CLASS_NAMES)
+    if is_valid:
+        print(f">> RESULT: {label} ({confidence:.1f}% confidence)")
+    else:
+        print(f">> RESULT: Image not recognized as a water container.")
+        print(f"   The model is not confident this is a moss/container image.")
