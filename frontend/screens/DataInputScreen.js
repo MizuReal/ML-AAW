@@ -92,12 +92,22 @@ const MAX_GUIDE_HEIGHT = WINDOW_DIMENSIONS.height * 0.78;
 const CAPTURE_GUIDE_WIDTH = Math.min(MAX_GUIDE_WIDTH, MAX_GUIDE_HEIGHT * WATER_CARD_ASPECT);
 const CAPTURE_GUIDE_HEIGHT = CAPTURE_GUIDE_WIDTH / WATER_CARD_ASPECT;
 const SUPABASE_SAMPLES_TABLE = process.env.EXPO_PUBLIC_SUPABASE_SAMPLES_TABLE || 'field_samples';
+const SUPABASE_PROFILES_TABLE = process.env.EXPO_PUBLIC_SUPABASE_PROFILES_TABLE || 'profiles';
 const AUTO_CAPTURE_START_THRESHOLD = 0.55; // Lower threshold - fiducials are the main check
 const AUTO_CAPTURE_CANCEL_THRESHOLD = 0.35;
 const AUTO_CAPTURE_START_MS = 1200; // Faster capture once ready
 const MAX_ACCEL_DELTA = 0.35;
 const FIDUCIAL_CHECK_INTERVAL_MS = 450; // Check more frequently
 const MIN_FIDUCIALS_FOR_CAPTURE = 4; // Require all 4 corners
+
+const getInitials = (value) => {
+  if (!value) return 'NA';
+  const parts = value.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return 'NA';
+  const first = parts[0][0] || '';
+  const last = parts.length > 1 ? parts[parts.length - 1][0] || '' : '';
+  return `${first}${last}`.toUpperCase();
+};
 
 const deriveAlignmentScore = ({ x = 0, y = 0, z = 0 }) => {
   const magnitude = Math.max(1e-3, Math.sqrt(x * x + y * y + z * z));
@@ -226,6 +236,8 @@ const DataInputScreen = ({ onNavigate }) => {
   const [resultModalVisible, setResultModalVisible] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [profileName, setProfileName] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
   // Fiducial detection state
   const [fiducialCount, setFiducialCount] = useState(0);
   const [fiducialQuality, setFiducialQuality] = useState(0);
@@ -316,6 +328,47 @@ const DataInputScreen = ({ onNavigate }) => {
       }),
     ]).start();
   }, [heroAnim, sectionsAnim]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadProfile = async () => {
+      try {
+        const sessionResult = await supabase.auth.getSession();
+        const user = sessionResult?.data?.session?.user || null;
+        if (!user) {
+          if (isMounted) {
+            setProfileName('');
+            setAvatarUrl('');
+          }
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from(SUPABASE_PROFILES_TABLE)
+          .select('display_name, avatar_url')
+          .eq('id', user.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.warn('[Supabase] profile fetch failed:', error.message || error);
+        }
+
+        if (isMounted) {
+          setProfileName(data?.display_name || user.email || '');
+          setAvatarUrl(data?.avatar_url || '');
+        }
+      } catch (error) {
+        console.warn('[Supabase] profile fetch error:', error?.message || error);
+      }
+    };
+
+    loadProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Fiducial validation function - captures a frame and sends to backend for validation
   const checkFiducials = useCallback(async () => {
@@ -912,10 +965,16 @@ const DataInputScreen = ({ onNavigate }) => {
                 <Text className="text-[12px] font-semibold text-sky-100">Dashboard</Text>
               </TouchableOpacity>
               <View className="items-center gap-1">
-                <View className="h-16 w-16 items-center justify-center rounded-[22px] border border-sky-800/70 bg-slate-950/70">
-                  <Text className="text-[18px] font-semibold text-sky-50">AC</Text>
+                <View className="h-16 w-16 overflow-hidden rounded-[22px] border border-sky-800/70 bg-slate-950/70">
+                  {avatarUrl ? (
+                    <Image source={{ uri: avatarUrl }} className="h-full w-full" resizeMode="cover" />
+                  ) : (
+                    <View className="h-full w-full items-center justify-center">
+                      <Text className="text-[18px] font-semibold text-sky-50">{getInitials(profileName)}</Text>
+                    </View>
+                  )}
                 </View>
-                <Text className="text-[13px] font-semibold text-sky-50">Aria Collins</Text>
+                <Text className="text-[13px] font-semibold text-sky-50">{profileName || 'Field operator'}</Text>
                 <Text className="text-[11px] text-slate-400">Field intelligence</Text>
               </View>
               <View className="rounded-2xl border border-emerald-500/50 bg-emerald-900/20 px-3 py-2">
