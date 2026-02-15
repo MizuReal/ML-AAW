@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Animated, Modal, TextInput, Image } from 'react-native';
+import LottieView from 'lottie-react-native';
 import { supabase } from '../utils/supabaseClient';
 import { chatWithGemini } from '../utils/api';
+import homeWaterAnim from '../assets/public/HomeWater.json';
+import cuteRobotAnim from '../assets/public/CuteRobot.json';
 
 const SUPABASE_PROFILES_TABLE = process.env.EXPO_PUBLIC_SUPABASE_PROFILES_TABLE || 'profiles';
 const SUPABASE_SAMPLES_TABLE = process.env.EXPO_PUBLIC_SUPABASE_SAMPLES_TABLE || 'field_samples';
@@ -126,29 +129,6 @@ const formatDeltaLabel = (latest, avgValue, suffix = '') => {
 	return `${sign}${Math.abs(delta).toFixed(2)} vs recent avg${suffix}`;
 };
 
-const TASKS = [
-	{
-		id: 'calibration',
-		title: 'Calibrate delta probes',
-		detail: 'Last run 36h ago - assign to lab 02',
-		state: 'Due soon',
-		stateClass: 'text-amber-300',
-	},
-	{
-		id: 'imaging',
-		title: 'Review image anomalies',
-		detail: 'Irrigation canal batch has 2 new flags',
-		state: 'Focus',
-		stateClass: 'text-rose-300',
-	},
-	{
-		id: 'policy',
-		title: 'Update compliance brief',
-		detail: 'Align daily log format with WHO draft',
-		state: 'In progress',
-		stateClass: 'text-sky-300',
-	},
-];
 
 const CHAT_TABS = [
 	{ id: 'quality', label: 'Ask about water quality' },
@@ -221,6 +201,13 @@ const HomeScreen = ({ onNavigate }) => {
 			},
 		],
 	});
+
+	const metricLookup = useMemo(() => {
+		return keyMetrics.reduce((acc, metric) => {
+			acc[metric.id] = metric;
+			return acc;
+		}, {});
+	}, [keyMetrics]);
 
 	const appendAssistantMessage = (threadKey, text) => {
 		const timestamp = Date.now();
@@ -327,22 +314,6 @@ const HomeScreen = ({ onNavigate }) => {
 			setChatLoading(false);
 		}
 	};
-
-	const metricRows = useMemo(() => {
-		const rows = [];
-		for (let i = 0; i < keyMetrics.length; i += 2) {
-			rows.push(keyMetrics.slice(i, i + 2));
-		}
-		return rows;
-	}, [keyMetrics]);
-
-	const chemistryRows = useMemo(() => {
-		const rows = [];
-		for (let i = 0; i < chemistryCards.length; i += 2) {
-			rows.push(chemistryCards.slice(i, i + 2));
-		}
-		return rows;
-	}, [chemistryCards]);
 
 	useEffect(() => {
 		Animated.parallel([
@@ -576,134 +547,107 @@ const HomeScreen = ({ onNavigate }) => {
 					}}
 					className="rounded-[34px] border border-sky-900/70 bg-gradient-to-br from-slate-950/90 via-sky-950/40 to-emerald-900/20 px-5 pb-6 pt-7"
 				>
-					<View className="flex-row items-start justify-between">
-						<View className="max-w-[70%]">
-							<Text className="text-[11px] uppercase tracking-[3px] text-sky-400">
-								Lake Biwa cluster
-							</Text>
-							<Text className="mt-2 text-[22px] font-semibold text-sky-50">
-								Operations pulse
-							</Text>
-							<Text className="mt-1 text-[12px] text-slate-400">
-								Updated 09:41 UTC
-							</Text>
-						</View>
-						<View className="items-end">
-							<View className="rounded-full border border-slate-800/70 bg-slate-950/70 px-4 py-1">
-								<Text className="text-[11px] font-semibold uppercase tracking-wide text-slate-300">
-									Ops Live
+					<View className="mb-5 flex-row items-center justify-between">
+						<View className="flex-row items-center gap-3">
+							<View className="h-12 w-12 overflow-hidden rounded-2xl border border-sky-800/70 bg-slate-950/70">
+								{avatarUrl ? (
+									<Image source={{ uri: avatarUrl }} className="h-full w-full" resizeMode="cover" />
+								) : (
+									<View className="h-full w-full items-center justify-center">
+										<Text className="text-[16px] font-semibold text-sky-50">
+											{getInitials(profileName)}
+										</Text>
+									</View>
+								)}
+							</View>
+							<View>
+								<Text className="text-[12px] uppercase tracking-[2px] text-sky-400">
+									Welcome back
+								</Text>
+								<Text className="text-[16px] font-semibold text-sky-50" numberOfLines={1}>
+									{profileName || 'Field operator'}
 								</Text>
 							</View>
+						</View>
+						<View className="rounded-full border border-amber-400/60 bg-amber-400/10 px-3 py-1">
+							<Text className="text-[11px] font-semibold text-amber-300">Status</Text>
 						</View>
 					</View>
 
-					<View className="mt-5 items-center">
-						<View className="h-20 w-20 overflow-hidden rounded-[26px] border border-sky-800/70 bg-slate-950/70">
-							{avatarUrl ? (
-								<Image
-									source={{ uri: avatarUrl }}
-									className="h-full w-full"
-									resizeMode="cover"
-								/>
-							) : (
-								<View className="h-full w-full items-center justify-center">
-									<Text className="text-[22px] font-semibold text-sky-50">
-										{getInitials(profileName)}
-									</Text>
-								</View>
-							)}
+					<View className="flex-row items-center justify-between">
+						<View className="h-36 w-[48%] items-center justify-center overflow-hidden rounded-[26px] border border-sky-900/70 bg-slate-950/60">
+							<LottieView source={homeWaterAnim} autoPlay loop style={{ width: 150, height: 150 }} />
 						</View>
-						<Text
-							className="mt-3 max-w-[90%] text-[17px] font-semibold text-sky-50"
-							numberOfLines={1}
-						>
-							{profileName || 'Field operator'}
-						</Text>
-						<Text className="text-[12px] text-slate-400">Field intelligence lead</Text>
+						<View className="h-36 w-[48%] items-center justify-center overflow-hidden rounded-[26px] border border-sky-900/70 bg-slate-950/60">
+							<LottieView source={cuteRobotAnim} autoPlay loop style={{ width: 150, height: 150 }} />
+						</View>
 					</View>
 
-					<View className="mt-5 rounded-2xl border border-sky-900/60 bg-slate-950/60 px-4 py-3">
-						<Text className="text-[12px] uppercase tracking-wide text-sky-300">
-							Cluster health
-						</Text>
-						<View className="mt-2 flex-row items-start justify-between gap-3">
-							<View className="flex-1 min-w-0">
-								<Text className="text-[28px] font-semibold text-emerald-200">
-									{clusterRiskLabel}
-								</Text>
-								<Text className="text-[13px] text-slate-400" numberOfLines={2}>
-									{clusterIndexLabel}
-								</Text>
-							</View>
-							<TouchableOpacity
-								activeOpacity={0.85}
-								className="shrink-0 rounded-full border border-aquaaccent/60 bg-aquaaccent/10 px-4 py-2"
-							>
-								<Text className="text-[12px] font-semibold text-aquaaccent">
-									Sync sensors
-								</Text>
-							</TouchableOpacity>
-						</View>
-						<View className="mt-3 h-1.5 w-full rounded-full bg-slate-900">
-							<View
-								className="h-full rounded-full bg-emerald-400"
-								style={{ width: `${clusterBarPercent}%` }}
-							/>
-						</View>
-						<Text className="mt-2 text-[11px] text-slate-400">
-							Based on turbidity, conductivity, imaging anomalies, and pathogen scan delta.
-						</Text>
-					</View>
+					<Text className="mt-5 text-[20px] font-semibold text-sky-50">
+						Know water safety fast.
+					</Text>
+					<Text className="mt-2 text-[13px] text-slate-300">
+						Capture a sample, get instant potability insight, and track trends without noise.
+					</Text>
 
-					<Animated.View
-						style={{
-							opacity: heroAnim,
-							transform: [
-								{
-									translateY: heroAnim.interpolate({
-										inputRange: [0, 1],
-										outputRange: [12, 0],
-									}),
-								},
-							],
-						}}
-						className="mt-4 rounded-[28px] border border-aquaaccent/40 bg-slate-950/80 p-4"
-					>
-						<View className="flex-row items-center justify-between">
-							<View className="max-w-[70%]">
-								<Text className="text-[12px] uppercase tracking-wide text-sky-300">
-									WaterOps Copilot
-								</Text>
-								<Text className="mt-1 text-[13px] text-slate-300">
-									Tap to brief our assistant on quality signals or your latest uploads.
-								</Text>
-							</View>
-							<View className="rounded-full border border-slate-800/70 px-3 py-1">
-								<Text className="text-[11px] font-semibold text-slate-300">Beta</Text>
-							</View>
-						</View>
+					<View className="mt-5 flex-row items-center gap-3">
 						<TouchableOpacity
 							activeOpacity={0.85}
-							className="mt-4 rounded-2xl border border-slate-800/80 bg-slate-900/80 px-4 py-3"
-							onPress={() => {
-								setChatOpen(true);
-							}}
+							className="flex-1 items-center rounded-2xl border border-aquaaccent/60 bg-aquaaccent/80 px-4 py-3"
+							onPress={() => onNavigate?.('dataInput')}
 						>
-							<Text className="text-[12px] text-slate-400">
-								Ask about stability windows, anomaly triage, or summarized data pulses...
-							</Text>
-							<View className="mt-3 flex-row flex-wrap gap-2">
-								{CHAT_TABS.map((tab) => (
-									<View
-										key={tab.id}
-										className="rounded-full border border-slate-800/70 px-3 py-1"
-									>
-										<Text className="text-[11px] text-slate-300" numberOfLines={1}>{tab.label}</Text>
-									</View>
-								))}
-							</View>
+							<Text className="text-[13px] font-semibold text-slate-950">Capture sample</Text>
 						</TouchableOpacity>
-					</Animated.View>
+						<TouchableOpacity
+							activeOpacity={0.85}
+							className="flex-1 items-center rounded-2xl border border-sky-900/70 bg-slate-950/70 px-4 py-3"
+							onPress={() => onNavigate?.('predictionHistory')}
+						>
+							<Text className="text-[13px] font-semibold text-sky-100">View history</Text>
+						</TouchableOpacity>
+					</View>
+
+					<View className="mt-5 flex-row items-center gap-3">
+						<View className="flex-1 rounded-2xl border border-emerald-500/40 bg-slate-950/60 px-4 py-3">
+							<Text className="text-[11px] uppercase tracking-wide text-emerald-300">Risk</Text>
+							<Text className="mt-2 text-[18px] font-semibold text-slate-50">{clusterRiskLabel}</Text>
+							<Text className="mt-1 text-[11px] text-slate-400" numberOfLines={1}>
+								{clusterIndexLabel}
+							</Text>
+						</View>
+						<View className="flex-1 rounded-2xl border border-sky-500/40 bg-slate-950/60 px-4 py-3">
+							<Text className="text-[11px] uppercase tracking-wide text-sky-300">Samples</Text>
+							<Text className="mt-2 text-[18px] font-semibold text-slate-50">
+								{metricLookup?.samples?.value || '--'}
+							</Text>
+							<Text className="mt-1 text-[11px] text-slate-400" numberOfLines={1}>
+								{metricLookup?.latest_sample?.caption || 'No timeline yet'}
+							</Text>
+						</View>
+					</View>
+
+					<View className="mt-4 rounded-2xl border border-amber-400/40 bg-slate-950/60 px-4 py-3">
+						<Text className="text-[11px] uppercase tracking-wide text-amber-300">Watchlist</Text>
+						<Text className="mt-2 text-[18px] font-semibold text-slate-50">
+							{metricLookup?.watchlist?.value || '0'}
+						</Text>
+						<Text className="mt-1 text-[11px] text-slate-400" numberOfLines={1}>
+							{metricLookup?.watchlist?.badge || 'No active alerts'}
+						</Text>
+					</View>
+
+					<View className="mt-5 flex-row flex-wrap items-center justify-between gap-2">
+						<Text className="flex-1 pr-3 text-[11px] text-slate-400">
+							Minimal, focused, and ready for the next sample.
+						</Text>
+						<TouchableOpacity
+							activeOpacity={0.85}
+							className="shrink-0 rounded-full border border-aquaaccent/60 bg-aquaaccent/15 px-4 py-2"
+							onPress={() => setChatOpen(true)}
+						>
+							<Text className="text-[11px] font-semibold text-aquaaccent">Ask Copilot</Text>
+						</TouchableOpacity>
+					</View>
 				</Animated.View>
 
 				<Animated.View
@@ -718,96 +662,31 @@ const HomeScreen = ({ onNavigate }) => {
 							},
 						],
 					}}
-					className="gap-4"
+					className="rounded-[30px] border border-sky-900/70 bg-slate-950/70 p-5"
 				>
-					{metricRows.map((row) => (
-						<View key={row[0].id} className="flex-row gap-3">
-							{row.map((metric) => (
-								<View
-									key={metric.id}
-									className={`flex-1 min-w-0 rounded-3xl border ${metric.borderClass} bg-slate-950/60 p-4`}
-								>
-									<Text className="text-[12px] uppercase tracking-wide text-slate-400" numberOfLines={1}>
-										{metric.label}
-									</Text>
-									<View className="mt-3 flex-row items-end justify-between gap-2">
-										<Text className="shrink text-[26px] font-semibold text-sky-50" numberOfLines={1}>
-											{metric.value}
-										</Text>
-										<Text className="max-w-[58%] text-right text-[11px] text-slate-400" numberOfLines={2}>
-											{metric.caption}
-										</Text>
-									</View>
-									<Text className={`mt-3 text-[12px] font-semibold ${metric.badgeClass}`} numberOfLines={1}>
-										{metric.badge}
-									</Text>
-								</View>
-							))}
-						</View>
-					))}
-				</Animated.View>
-
-				<View className="gap-3">
-					{chemistryRows.map((row, rowIndex) => (
-						<View key={`${row[0].id}-${rowIndex}`} className="flex-row gap-3">
-							{row.map((card) => (
-								<View
-									key={card.id}
-									className="flex-1 min-w-0 rounded-3xl border border-sky-900/70 bg-slate-950/70 p-4"
-								>
-									<Text className="text-[12px] uppercase tracking-wide text-sky-300">
-										{card.label}
-									</Text>
-									<Text className="mt-2 text-[20px] font-semibold text-sky-50" numberOfLines={1}>
-										{card.value}
-									</Text>
-									<Text className="text-[12px] text-slate-400" numberOfLines={1}>{card.descriptor}</Text>
-									<Text className="mt-1 text-[11px] text-slate-500" numberOfLines={2}>{card.change}</Text>
-									<View className="mt-3 h-1.5 w-full rounded-full bg-slate-900">
-										<View className={`h-full rounded-full ${card.barWidth} ${card.barColor}`} />
-									</View>
-								</View>
-							))}
-						</View>
-					))}
-				</View>
-
-				<View className="rounded-3xl border border-emerald-600/40 bg-emerald-900/10 p-5">
-					<Text className="text-[12px] uppercase tracking-wide text-emerald-300">
-						Image insights
-					</Text>
-					<Text className="mt-2 text-[14px] text-slate-200">
-						No anomalies detected in last microscopy run. Dusk captures share 96 percent match with healthy baseline.
-					</Text>
-					<Text className="mt-2 text-[11px] text-slate-400">
-						Next auto-ingest window starts 12:30 UTC. Confirm glare mask before batch uploads.
-					</Text>
-				</View>
-
-				<View className="rounded-3xl border border-sky-900/70 bg-slate-950/80 p-5">
-					<View className="flex-row items-center justify-between">
-						<Text className="text-[13px] uppercase tracking-wide text-sky-300">
-							Action queue
-						</Text>
-						<Text className="text-[12px] text-slate-400">Updated 5m ago</Text>
-					</View>
-					{TASKS.map((task) => (
-						<View
-							key={task.id}
-							className="mt-4 rounded-2xl border border-slate-800/80 bg-slate-950/80 px-4 py-3"
-						>
-							<View className="flex-row items-center justify-between gap-2">
-								<Text className="flex-1 text-[15px] font-semibold text-sky-50" numberOfLines={1}>
-									{task.title}
+					<Text className="text-[12px] uppercase tracking-wide text-sky-300">Chemistry pulse</Text>
+					<View className="mt-3 flex-row gap-3">
+						{chemistryCards.slice(0, 2).map((card) => (
+							<View
+								key={card.id}
+								className="flex-1 min-w-0 rounded-2xl border border-sky-900/70 bg-slate-950/80 px-4 py-3"
+							>
+								<Text className="text-[11px] uppercase tracking-wide text-sky-300">
+									{card.label}
 								</Text>
-								<Text className={`shrink-0 text-[12px] font-semibold ${task.stateClass}`} numberOfLines={1}>
-									{task.state}
+								<Text className="mt-2 text-[18px] font-semibold text-slate-50" numberOfLines={1}>
+									{card.value}
+								</Text>
+								<Text className="text-[11px] text-slate-400" numberOfLines={1}>
+									{card.change}
 								</Text>
 							</View>
-							<Text className="mt-1 text-[12px] text-slate-400" numberOfLines={2}>{task.detail}</Text>
-						</View>
-					))}
-				</View>
+						))}
+					</View>
+					<Text className="mt-3 text-[11px] text-slate-400">
+						Open Analytics to explore full chemistry trends.
+					</Text>
+				</Animated.View>
 
 			</ScrollView>
 
