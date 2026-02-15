@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import AuthModal from "@/components/AuthModal";
+import { getUserRole, isAdminRole } from "@/lib/profileRole";
 import { isSupabaseConfigured, supabase } from "@/lib/supabaseClient";
 
 export default function Navigation() {
@@ -49,12 +50,27 @@ export default function Navigation() {
     };
   }, []);
 
-  const handleDashboardClick = () => {
+  const handleDashboardClick = async () => {
     if (!isAuthenticated) {
       openModal("login");
       return;
     }
-    router.push("/dashboard");
+
+    if (!supabase) {
+      router.push("/dashboard");
+      return;
+    }
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      const role = userId ? await getUserRole(userId) : null;
+      router.push(isAdminRole(role) ? "/admin/dashboard" : "/dashboard");
+    } catch {
+      router.push("/dashboard");
+    }
   };
 
   return (

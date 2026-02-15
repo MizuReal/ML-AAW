@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { getUserRole, isAdminRole } from "@/lib/profileRole";
 import { isSupabaseConfigured, supabase } from "@/lib/supabaseClient";
 
 const formFields = {
@@ -104,13 +105,22 @@ export default function AuthModal({ open, mode = "login", onClose, onModeChange 
     setLoading(true);
     setFeedback(null);
 
+    let redirectPath = "/dashboard";
+
     try {
       if (mode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email: payload.email.trim(),
           password: payload.password,
         });
         if (error) throw error;
+
+        const userId = data?.user?.id;
+        if (userId) {
+          const role = await getUserRole(userId);
+          redirectPath = isAdminRole(role) ? "/admin/dashboard" : "/dashboard";
+        }
+
         setFeedback({ type: "success", message: "Authenticated. Redirecting you to the dashboard..." });
       } else {
         const { error } = await supabase.auth.signUp({
@@ -131,7 +141,7 @@ export default function AuthModal({ open, mode = "login", onClose, onModeChange 
         onClose?.();
         setFormState(defaultFormState());
         if (mode === "login") {
-          router.replace("/dashboard");
+          router.replace(redirectPath);
         }
       }, 800);
     } catch (error) {

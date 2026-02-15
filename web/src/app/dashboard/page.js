@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { getUserRole, isAdminRole } from "@/lib/profileRole";
 import { isSupabaseConfigured, supabase } from "@/lib/supabaseClient";
 import UserSamples from "./user_samples";
 
@@ -118,6 +119,20 @@ export default function DashboardPage() {
         router.replace("/");
         return;
       }
+
+      try {
+        const role = await getUserRole(data.session.user.id);
+        if (!isMounted) return;
+
+        if (isAdminRole(role)) {
+          setRedirecting(true);
+          router.replace("/admin/dashboard");
+          return;
+        }
+      } catch {
+        /* role lookup failure should not block regular dashboard */
+      }
+
       setAuthReady(true);
       setChecking(false);
 
