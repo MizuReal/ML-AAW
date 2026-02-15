@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Animated, Modal, TextInput, Image } from 'react-native';
 import LottieView from 'lottie-react-native';
+import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { supabase } from '../utils/supabaseClient';
 import { chatWithGemini } from '../utils/api';
 import homeWaterAnim from '../assets/public/HomeWater.json';
 import cuteRobotAnim from '../assets/public/CuteRobot.json';
+import { useAppTheme } from '../utils/theme';
 
 const SUPABASE_PROFILES_TABLE = process.env.EXPO_PUBLIC_SUPABASE_PROFILES_TABLE || 'profiles';
 const SUPABASE_SAMPLES_TABLE = process.env.EXPO_PUBLIC_SUPABASE_SAMPLES_TABLE || 'field_samples';
@@ -140,6 +142,13 @@ const DATA_SCOPE_HINT =
 const QUALITY_SCOPE_HINT =
 	'I can help with water-quality topics like pH, turbidity, hardness, conductivity, contamination risk, and interpretation.';
 
+const CHEMISTRY_ICONS = {
+	ph: 'flask-outline',
+	turbidity: 'waves-arrow-up',
+	conductivity: 'flash-outline',
+	hardness: 'beaker-outline',
+};
+
 const containsKeyword = (text = '', keywords = []) => {
 	const lower = text.toLowerCase();
 	return keywords.some((keyword) => lower.includes(keyword));
@@ -171,6 +180,7 @@ const isAllowedQualityPrompt = (text = '') => {
 };
 
 const HomeScreen = ({ onNavigate }) => {
+	const { isDark } = useAppTheme();
   const heroAnim = useRef(new Animated.Value(0)).current;
   const cardsAnim = useRef(new Animated.Value(0)).current;
 	const [chatOpen, setChatOpen] = useState(false);
@@ -527,7 +537,7 @@ const HomeScreen = ({ onNavigate }) => {
 	const currentThread = chatThreads[activeChatTab === 'quality' ? 'quality' : 'data'] || [];
 
 	return (
-		<View className="flex-1 bg-aquadark">
+		<View className={`flex-1 ${isDark ? 'bg-aquadark' : 'bg-slate-100'}`}>
 			<ScrollView
 				className="px-5 pt-10"
 				contentContainerClassName="pb-20 gap-6"
@@ -545,16 +555,20 @@ const HomeScreen = ({ onNavigate }) => {
 							},
 						],
 					}}
-					className="rounded-[34px] border border-sky-900/70 bg-gradient-to-br from-slate-950/90 via-sky-950/40 to-emerald-900/20 px-5 pb-6 pt-7"
+					className={`rounded-[34px] border px-5 pb-6 pt-7 ${
+						isDark
+							? 'border-sky-900/70 bg-gradient-to-br from-slate-950/90 via-sky-950/40 to-emerald-900/20'
+							: 'border-slate-300 bg-white'
+					}`}
 				>
 					<View className="mb-5 flex-row items-center justify-between">
 						<View className="flex-row items-center gap-3">
-							<View className="h-12 w-12 overflow-hidden rounded-2xl border border-sky-800/70 bg-slate-950/70">
+							<View className={`h-12 w-12 overflow-hidden rounded-2xl border ${isDark ? 'border-sky-800/70 bg-slate-950/70' : 'border-slate-300 bg-slate-200'}`}>
 								{avatarUrl ? (
 									<Image source={{ uri: avatarUrl }} className="h-full w-full" resizeMode="cover" />
 								) : (
 									<View className="h-full w-full items-center justify-center">
-										<Text className="text-[16px] font-semibold text-sky-50">
+										<Text className={`text-[16px] font-semibold ${isDark ? 'text-sky-50' : 'text-slate-800'}`}>
 											{getInitials(profileName)}
 										</Text>
 									</View>
@@ -564,29 +578,40 @@ const HomeScreen = ({ onNavigate }) => {
 								<Text className="text-[12px] uppercase tracking-[2px] text-sky-400">
 									Welcome back
 								</Text>
-								<Text className="text-[16px] font-semibold text-sky-50" numberOfLines={1}>
+								<Text className={`text-[16px] font-semibold ${isDark ? 'text-sky-50' : 'text-slate-800'}`} numberOfLines={1}>
 									{profileName || 'Field operator'}
 								</Text>
 							</View>
 						</View>
-						<View className="rounded-full border border-amber-400/60 bg-amber-400/10 px-3 py-1">
-							<Text className="text-[11px] font-semibold text-amber-300">Status</Text>
+						<View
+							className={`rounded-full border px-3 py-1 ${
+								isDark ? 'border-amber-400/60 bg-amber-400/10' : 'border-amber-300 bg-amber-100'
+							}`}
+						>
+							<View className="flex-row items-center gap-1.5">
+								<MaterialCommunityIcons
+									name="shield-check"
+									size={12}
+									color={isDark ? '#fcd34d' : '#92400e'}
+								/>
+								<Text className={`text-[11px] font-semibold ${isDark ? 'text-amber-300' : 'text-amber-800'}`}>Status</Text>
+							</View>
 						</View>
 					</View>
 
 					<View className="flex-row items-center justify-between">
-						<View className="h-36 w-[48%] items-center justify-center overflow-hidden rounded-[26px] border border-sky-900/70 bg-slate-950/60">
+						<View className={`h-36 w-[48%] items-center justify-center overflow-hidden rounded-[26px] border ${isDark ? 'border-sky-900/70 bg-slate-950/60' : 'border-slate-300 bg-slate-100'}`}>
 							<LottieView source={homeWaterAnim} autoPlay loop style={{ width: 150, height: 150 }} />
 						</View>
-						<View className="h-36 w-[48%] items-center justify-center overflow-hidden rounded-[26px] border border-sky-900/70 bg-slate-950/60">
+						<View className={`h-36 w-[48%] items-center justify-center overflow-hidden rounded-[26px] border ${isDark ? 'border-sky-900/70 bg-slate-950/60' : 'border-slate-300 bg-slate-100'}`}>
 							<LottieView source={cuteRobotAnim} autoPlay loop style={{ width: 150, height: 150 }} />
 						</View>
 					</View>
 
-					<Text className="mt-5 text-[20px] font-semibold text-sky-50">
+					<Text className={`mt-5 text-[20px] font-semibold ${isDark ? 'text-sky-50' : 'text-slate-900'}`}>
 						Know water safety fast.
 					</Text>
-					<Text className="mt-2 text-[13px] text-slate-300">
+					<Text className={`mt-2 text-[13px] ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
 						Capture a sample, get instant potability insight, and track trends without noise.
 					</Text>
 
@@ -596,56 +621,76 @@ const HomeScreen = ({ onNavigate }) => {
 							className="flex-1 items-center rounded-2xl border border-aquaaccent/60 bg-aquaaccent/80 px-4 py-3"
 							onPress={() => onNavigate?.('dataInput')}
 						>
-							<Text className="text-[13px] font-semibold text-slate-950">Capture sample</Text>
+							<View className="flex-row items-center gap-2">
+								<Feather name="camera" size={14} color="#0f172a" />
+								<Text className="text-[13px] font-semibold text-slate-950">Capture sample</Text>
+							</View>
 						</TouchableOpacity>
 						<TouchableOpacity
 							activeOpacity={0.85}
-							className="flex-1 items-center rounded-2xl border border-sky-900/70 bg-slate-950/70 px-4 py-3"
+							className={`flex-1 items-center rounded-2xl border px-4 py-3 ${isDark ? 'border-sky-900/70 bg-slate-950/70' : 'border-slate-300 bg-slate-100'}`}
 							onPress={() => onNavigate?.('predictionHistory')}
 						>
-							<Text className="text-[13px] font-semibold text-sky-100">View history</Text>
+							<View className="flex-row items-center gap-2">
+								<Feather name="clock" size={14} color={isDark ? '#e0f2fe' : '#1f2937'} />
+								<Text className={`text-[13px] font-semibold ${isDark ? 'text-sky-100' : 'text-slate-800'}`}>View history</Text>
+							</View>
 						</TouchableOpacity>
 					</View>
 
 					<View className="mt-5 flex-row items-center gap-3">
-						<View className="flex-1 rounded-2xl border border-emerald-500/40 bg-slate-950/60 px-4 py-3">
-							<Text className="text-[11px] uppercase tracking-wide text-emerald-300">Risk</Text>
-							<Text className="mt-2 text-[18px] font-semibold text-slate-50">{clusterRiskLabel}</Text>
-							<Text className="mt-1 text-[11px] text-slate-400" numberOfLines={1}>
+						<View className={`flex-1 rounded-2xl border border-emerald-500/40 px-4 py-3 ${isDark ? 'bg-slate-950/60' : 'bg-emerald-50'}`}>
+							<View className="flex-row items-center gap-1.5">
+								<MaterialCommunityIcons name="alert-circle-outline" size={12} color={isDark ? '#86efac' : '#047857'} />
+								<Text className={`text-[11px] uppercase tracking-wide ${isDark ? 'text-emerald-300' : 'text-emerald-600'}`}>Risk</Text>
+							</View>
+							<Text className={`mt-2 text-[18px] font-semibold ${isDark ? 'text-slate-50' : 'text-slate-900'}`}>{clusterRiskLabel}</Text>
+							<Text className={`mt-1 text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`} numberOfLines={1}>
 								{clusterIndexLabel}
 							</Text>
 						</View>
-						<View className="flex-1 rounded-2xl border border-sky-500/40 bg-slate-950/60 px-4 py-3">
-							<Text className="text-[11px] uppercase tracking-wide text-sky-300">Samples</Text>
-							<Text className="mt-2 text-[18px] font-semibold text-slate-50">
+						<View className={`flex-1 rounded-2xl border border-sky-500/40 px-4 py-3 ${isDark ? 'bg-slate-950/60' : 'bg-sky-50'}`}>
+							<View className="flex-row items-center gap-1.5">
+								<MaterialCommunityIcons name="database-outline" size={12} color={isDark ? '#7dd3fc' : '#0369a1'} />
+								<Text className={`text-[11px] uppercase tracking-wide ${isDark ? 'text-sky-300' : 'text-sky-600'}`}>Samples</Text>
+							</View>
+							<Text className={`mt-2 text-[18px] font-semibold ${isDark ? 'text-slate-50' : 'text-slate-900'}`}>
 								{metricLookup?.samples?.value || '--'}
 							</Text>
-							<Text className="mt-1 text-[11px] text-slate-400" numberOfLines={1}>
+							<Text className={`mt-1 text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`} numberOfLines={1}>
 								{metricLookup?.latest_sample?.caption || 'No timeline yet'}
 							</Text>
 						</View>
 					</View>
 
-					<View className="mt-4 rounded-2xl border border-amber-400/40 bg-slate-950/60 px-4 py-3">
-						<Text className="text-[11px] uppercase tracking-wide text-amber-300">Watchlist</Text>
-						<Text className="mt-2 text-[18px] font-semibold text-slate-50">
+					<View className={`mt-4 rounded-2xl border border-amber-400/40 px-4 py-3 ${isDark ? 'bg-slate-950/60' : 'bg-amber-50'}`}>
+						<View className="flex-row items-center gap-1.5">
+							<MaterialCommunityIcons name="bell-alert-outline" size={12} color={isDark ? '#fcd34d' : '#b45309'} />
+							<Text className={`text-[11px] uppercase tracking-wide ${isDark ? 'text-amber-300' : 'text-amber-600'}`}>Watchlist</Text>
+						</View>
+						<Text className={`mt-2 text-[18px] font-semibold ${isDark ? 'text-slate-50' : 'text-slate-900'}`}>
 							{metricLookup?.watchlist?.value || '0'}
 						</Text>
-						<Text className="mt-1 text-[11px] text-slate-400" numberOfLines={1}>
+						<Text className={`mt-1 text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`} numberOfLines={1}>
 							{metricLookup?.watchlist?.badge || 'No active alerts'}
 						</Text>
 					</View>
 
 					<View className="mt-5 flex-row flex-wrap items-center justify-between gap-2">
-						<Text className="flex-1 pr-3 text-[11px] text-slate-400">
+						<Text className={`flex-1 pr-3 text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
 							Minimal, focused, and ready for the next sample.
 						</Text>
 						<TouchableOpacity
 							activeOpacity={0.85}
-							className="shrink-0 rounded-full border border-aquaaccent/60 bg-aquaaccent/15 px-4 py-2"
+							className={`shrink-0 rounded-full border px-4 py-2 ${
+								isDark ? 'border-aquaaccent/60 bg-aquaaccent/15' : 'border-aquaaccent/70 bg-aquaaccent/25'
+							}`}
 							onPress={() => setChatOpen(true)}
 						>
-							<Text className="text-[11px] font-semibold text-aquaaccent">Ask Copilot</Text>
+							<View className="flex-row items-center gap-1.5">
+								<Feather name="message-circle" size={12} color="#22d3ee" />
+								<Text className="text-[11px] font-semibold text-aquaaccent">Ask Copilot</Text>
+							</View>
 						</TouchableOpacity>
 					</View>
 				</Animated.View>
@@ -662,28 +707,37 @@ const HomeScreen = ({ onNavigate }) => {
 							},
 						],
 					}}
-					className="rounded-[30px] border border-sky-900/70 bg-slate-950/70 p-5"
+					className={`rounded-[30px] p-5 ${
+						isDark ? 'border border-sky-900/70 bg-slate-950/70' : 'border border-slate-300 bg-white'
+					}`}
 				>
-					<Text className="text-[12px] uppercase tracking-wide text-sky-300">Chemistry pulse</Text>
+					<Text className={`text-[12px] uppercase tracking-wide ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>Chemistry pulse</Text>
 					<View className="mt-3 flex-row gap-3">
 						{chemistryCards.slice(0, 2).map((card) => (
 							<View
 								key={card.id}
-								className="flex-1 min-w-0 rounded-2xl border border-sky-900/70 bg-slate-950/80 px-4 py-3"
+								className={`flex-1 min-w-0 rounded-2xl border px-4 py-3 ${isDark ? 'border-sky-900/70 bg-slate-950/80' : 'border-slate-300 bg-slate-50'}`}
 							>
-								<Text className="text-[11px] uppercase tracking-wide text-sky-300">
-									{card.label}
-								</Text>
-								<Text className="mt-2 text-[18px] font-semibold text-slate-50" numberOfLines={1}>
+								<View className="flex-row items-center gap-1.5">
+									<MaterialCommunityIcons
+										name={CHEMISTRY_ICONS[card.id] || 'chart-line'}
+										size={12}
+										color={isDark ? '#7dd3fc' : '#0284c7'}
+									/>
+									<Text className={`text-[11px] uppercase tracking-wide ${isDark ? 'text-sky-300' : 'text-sky-600'}`}>
+										{card.label}
+									</Text>
+								</View>
+								<Text className={`mt-2 text-[18px] font-semibold ${isDark ? 'text-slate-50' : 'text-slate-900'}`} numberOfLines={1}>
 									{card.value}
 								</Text>
-								<Text className="text-[11px] text-slate-400" numberOfLines={1}>
+								<Text className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`} numberOfLines={1}>
 									{card.change}
 								</Text>
 							</View>
 						))}
 					</View>
-					<Text className="mt-3 text-[11px] text-slate-400">
+					<Text className={`mt-3 text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
 						Open Analytics to explore full chemistry trends.
 					</Text>
 				</Animated.View>
@@ -696,28 +750,32 @@ const HomeScreen = ({ onNavigate }) => {
 				transparent
 				onRequestClose={() => setChatOpen(false)}
 			>
-				<View className="flex-1 bg-black/70 px-5 py-10">
+				<View className={`flex-1 px-5 py-10 ${isDark ? 'bg-black/70' : 'bg-slate-900/35'}`}>
 					<View className="flex-1 justify-center">
-						<View className="max-h-[80%] rounded-[32px] border border-sky-900/80 bg-slate-950/95 p-5">
+						<View
+							className={`max-h-[80%] rounded-[32px] p-5 ${
+								isDark ? 'border border-sky-900/80 bg-slate-950/95' : 'border border-slate-300 bg-white'
+							}`}
+						>
 							<View className="flex-row items-center justify-between">
 								<View>
-									<Text className="text-[16px] font-semibold text-sky-50">
+									<Text className={`text-[16px] font-semibold ${isDark ? 'text-sky-50' : 'text-slate-900'}`}>
 										WaterOps Copilot
 									</Text>
-									<Text className="text-[12px] text-slate-400">
+									<Text className={`text-[12px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
 										Conversational assistant
 									</Text>
 								</View>
 								<TouchableOpacity
 									activeOpacity={0.8}
 									onPress={() => setChatOpen(false)}
-									className="h-10 w-10 items-center justify-center rounded-full border border-slate-800/70"
+									className={`h-10 w-10 items-center justify-center rounded-full border ${isDark ? 'border-slate-800/70' : 'border-slate-300'}`}
 								>
-									<Text className="text-[16px] font-semibold text-sky-100">X</Text>
+									<Text className={`text-[16px] font-semibold ${isDark ? 'text-sky-100' : 'text-slate-700'}`}>X</Text>
 								</TouchableOpacity>
 							</View>
 
-							<View className="mt-4 flex-row rounded-full border border-slate-800/80 bg-slate-900/60 p-1">
+							<View className={`mt-4 flex-row rounded-full border p-1 ${isDark ? 'border-slate-800/80 bg-slate-900/60' : 'border-slate-300 bg-slate-100'}`}>
 								{CHAT_TABS.map((tab) => {
 									const selected = activeChatTab === tab.id;
 									return (
@@ -729,14 +787,21 @@ const HomeScreen = ({ onNavigate }) => {
 											}`}
 											onPress={() => setActiveChatTab(tab.id)}
 										>
-											<Text
-												className={`text-center text-[12px] font-semibold ${
-													selected ? 'text-aquaaccent' : 'text-slate-300'
-												}`}
-												numberOfLines={1}
-											>
-												{tab.label}
-											</Text>
+											<View className="flex-row items-center justify-center gap-1.5">
+												<MaterialCommunityIcons
+													name={tab.id === 'quality' ? 'water-check-outline' : 'database-search-outline'}
+													size={12}
+													color={selected ? '#22d3ee' : isDark ? '#cbd5e1' : '#475569'}
+												/>
+												<Text
+													className={`text-center text-[12px] font-semibold ${
+													selected ? 'text-aquaaccent' : isDark ? 'text-slate-300' : 'text-slate-600'
+													}`}
+													numberOfLines={1}
+												>
+													{tab.label}
+												</Text>
+											</View>
 										</TouchableOpacity>
 									);
 								})}
@@ -755,26 +820,28 @@ const HomeScreen = ({ onNavigate }) => {
 											key={message.id}
 											className={`max-w-[85%] rounded-2xl px-4 py-3 ${
 												isUser
-													? 'self-end bg-aquaaccent/20 border border-aquaaccent/40'
-												: 'self-start border border-slate-800/80 bg-slate-900/80'
+													? isDark
+														? 'self-end bg-aquaaccent/20 border border-aquaaccent/40'
+														: 'self-end bg-aquaaccent/30 border border-aquaaccent/60'
+												: isDark ? 'self-start border border-slate-800/80 bg-slate-900/80' : 'self-start border border-slate-300 bg-slate-100'
 											}`}
 										>
-											<Text className="text-[13px] text-sky-50">{message.text}</Text>
+											<Text className={`text-[13px] ${isDark ? 'text-sky-50' : 'text-slate-800'}`}>{message.text}</Text>
 										</View>
 									);
 								})}
 								{chatLoading && (
-									<View className="max-w-[85%] self-start rounded-2xl border border-slate-800/80 bg-slate-900/80 px-4 py-3">
-										<Text className="text-[13px] text-slate-300">Thinking...</Text>
+									<View className={`max-w-[85%] self-start rounded-2xl border px-4 py-3 ${isDark ? 'border-slate-800/80 bg-slate-900/80' : 'border-slate-300 bg-slate-100'}`}>
+										<Text className={`text-[13px] ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>Thinking...</Text>
 									</View>
 								)}
 							</ScrollView>
 
 							<View className="mt-4 flex-row items-center gap-3">
 								<TextInput
-									className="flex-1 rounded-2xl border border-slate-800/70 bg-slate-900/80 px-4 py-3 text-sky-100"
+									className={`flex-1 rounded-2xl border px-4 py-3 ${isDark ? 'border-slate-800/70 bg-slate-900/80 text-sky-100' : 'border-slate-300 bg-slate-50 text-slate-800'}`}
 									placeholder="Write a prompt..."
-									placeholderTextColor="#94a3b8"
+									placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
 									value={chatInput}
 									onChangeText={setChatInput}
 									multiline
@@ -782,11 +849,11 @@ const HomeScreen = ({ onNavigate }) => {
 								/>
 								<TouchableOpacity
 									activeOpacity={0.85}
-									className={`rounded-2xl border border-aquaaccent/60 px-4 py-3 ${chatLoading ? 'bg-slate-700' : 'bg-aquaaccent/80'}`}
+									className={`rounded-2xl border border-aquaaccent/60 px-4 py-3 ${chatLoading ? (isDark ? 'bg-slate-700' : 'bg-slate-200') : 'bg-aquaaccent/80'}`}
 									onPress={handleSendChat}
 									disabled={chatLoading}
 								>
-									<Text className={`text-[13px] font-semibold ${chatLoading ? 'text-slate-300' : 'text-slate-950'}`}>
+									<Text className={`text-[13px] font-semibold ${chatLoading ? (isDark ? 'text-slate-300' : 'text-slate-500') : 'text-slate-950'}`}>
 										{chatLoading ? 'Sending' : 'Send'}
 									</Text>
 								</TouchableOpacity>

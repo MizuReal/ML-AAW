@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Modal, View, Text, TouchableOpacity, ScrollView, SafeAreaView, Dimensions, TextInput, ActivityIndicator } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { getFiltrationSuggestion, chatWithGemini } from '../utils/api';
+import { useAppTheme } from '../utils/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GAUGE_WIDTH = Math.min(SCREEN_WIDTH - 80, 280);
@@ -16,13 +17,18 @@ class MicrobialErrorBoundary extends React.Component {
 		console.warn('[MicrobialRiskSection] render error:', error, info);
 	}
 	render() {
+		const isDark = this.props.isDark !== false;
 		if (this.state.hasError) {
 			return (
-				<View className="mt-6 rounded-[28px] border border-rose-500/30 bg-rose-500/5 p-5">
-					<Text className="text-[12px] font-semibold text-rose-300">
+				<View
+					className={`mt-6 rounded-[28px] border p-5 ${
+						isDark ? 'border-rose-500/30 bg-rose-500/5' : 'border-rose-300 bg-rose-100'
+					}`}
+				>
+					<Text className={`text-[12px] font-semibold ${isDark ? 'text-rose-300' : 'text-rose-700'}`}>
 						Microbial risk data is available but could not be rendered.
 					</Text>
-					<Text className="text-[10px] text-rose-400/60 mt-1">
+					<Text className={`text-[10px] mt-1 ${isDark ? 'text-rose-400/60' : 'text-rose-600'}`}>
 						Check the console for details.
 					</Text>
 				</View>
@@ -45,7 +51,7 @@ const getConfidenceAnimation = (probability = 0) => {
 	return CONFIDENCE_ANIMATIONS.high; // > 70%
 };
 
-const ConfidenceGauge = ({ probability, threshold = 0.5 }) => {
+const ConfidenceGauge = ({ probability, threshold = 0.5, isDark = true }) => {
 	const percentage = Math.round(probability * 100);
 	const thresholdPos = threshold * 100;
 	const isAboveThreshold = probability >= threshold;
@@ -69,7 +75,7 @@ const ConfidenceGauge = ({ probability, threshold = 0.5 }) => {
 	return (
 		<View className="mt-4">
 			<View className="flex-row items-center justify-between mb-2">
-				<Text className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+				<Text className={`text-[11px] font-semibold uppercase tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
 					Model Confidence
 				</Text>
 				<View className="flex-row items-center gap-1.5">
@@ -81,7 +87,7 @@ const ConfidenceGauge = ({ probability, threshold = 0.5 }) => {
 			</View>
 			
 			{/* Gauge Bar */}
-			<View className="h-3 rounded-full bg-slate-800 overflow-hidden flex-row">
+			<View className={`h-3 rounded-full overflow-hidden flex-row ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`}>
 				{segments.map((seg, i) => {
 					const segWidth = seg.range[1] - seg.range[0];
 					const fillWidth = Math.max(0, Math.min(percentage - seg.range[0], segWidth));
@@ -105,28 +111,28 @@ const ConfidenceGauge = ({ probability, threshold = 0.5 }) => {
 			
 			{/* Scale Labels */}
 			<View className="flex-row justify-between mt-1.5">
-				<Text className="text-[9px] text-slate-600">0%</Text>
-				<Text className="text-[9px] text-slate-500">50%</Text>
-				<Text className="text-[9px] text-slate-600">100%</Text>
+				<Text className={`text-[9px] ${isDark ? 'text-slate-600' : 'text-slate-500'}`}>0%</Text>
+				<Text className={`text-[9px] ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>50%</Text>
+				<Text className={`text-[9px] ${isDark ? 'text-slate-600' : 'text-slate-500'}`}>100%</Text>
 			</View>
 			
 			{/* Confidence Value */}
 			<View className="items-center mt-3">
-				<Text className="text-[32px] font-bold text-slate-50">{percentage}%</Text>
-				<Text className="text-[11px] text-slate-400 mt-0.5">
+				<Text className={`text-[32px] font-bold ${isDark ? 'text-slate-50' : 'text-slate-900'}`}>{percentage}%</Text>
+				<Text className={`text-[11px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
 					{isAboveThreshold ? 'Above' : 'Below'} decision threshold ({Math.round(thresholdPos)}%)
 				</Text>
 			</View>
 
 			{/* ─── Prediction Analytics ─── */}
-			<PredictionAnalytics probability={probability} threshold={threshold} />
+			<PredictionAnalytics probability={probability} threshold={threshold} isDark={isDark} />
 			
 		</View>
 	);
 };
 
 /** Compact metric row with bar, value, and description */
-const AnalyticsMetric = ({ label, value, description, barColor }) => {
+const AnalyticsMetric = ({ label, value, description, barColor, isDark = true }) => {
 	const pct = Math.round(value * 100);
 	const resolvedColor = barColor || (
 		pct >= 60 ? 'bg-emerald-500' : pct >= 30 ? 'bg-amber-500' : 'bg-rose-500'
@@ -134,22 +140,22 @@ const AnalyticsMetric = ({ label, value, description, barColor }) => {
 	return (
 		<View className="gap-1">
 			<View className="flex-row items-center justify-between">
-				<Text className="text-[10px] font-medium text-slate-300">{label}</Text>
-				<Text className="text-[11px] font-semibold text-slate-200">{pct}%</Text>
+				<Text className={`text-[10px] font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{label}</Text>
+				<Text className={`text-[11px] font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{pct}%</Text>
 			</View>
-			<View className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+			<View className={`h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`}>
 				<View
 					className={`h-full rounded-full ${resolvedColor}`}
 					style={{ width: `${pct}%` }}
 				/>
 			</View>
-			<Text className="text-[9px] text-slate-500">{description}</Text>
+			<Text className={`text-[9px] ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>{description}</Text>
 		</View>
 	);
 };
 
 /** Full analytics breakdown panel */
-const PredictionAnalytics = ({ probability, threshold }) => {
+const PredictionAnalytics = ({ probability, threshold, isDark = true }) => {
 	const p = probability;
 	const t = threshold;
 
@@ -176,35 +182,39 @@ const PredictionAnalytics = ({ probability, threshold }) => {
 	const verdict = getVerdict();
 
 	return (
-		<View className="mt-4 rounded-xl border border-slate-800 bg-slate-900/40 p-3">
-			<Text className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 mb-3">
+		<View className={`mt-4 rounded-xl border p-3 ${isDark ? 'border-slate-800 bg-slate-900/40' : 'border-slate-200 bg-slate-50'}`}>
+			<Text className={`text-[10px] font-semibold uppercase tracking-wide mb-3 ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>
 				Prediction Analytics
 			</Text>
 			<View className="gap-3">
 				<AnalyticsMetric
 					label="Certainty"
 					value={certainty}
+					isDark={isDark}
 					description="Distance from 50/50 uncertainty — higher means the model is more decisive"
 				/>
 				<AnalyticsMetric
 					label="Threshold Margin"
 					value={margin}
+					isDark={isDark}
 					description={`Buffer from the ${Math.round(t * 100)}% decision boundary — larger margin = more room for error`}
 				/>
 				<AnalyticsMetric
 					label="Signal Strength"
 					value={signalStrength}
+					isDark={isDark}
 					description="Dominant-class probability — raw strength of the predicted outcome"
 				/>
 				<AnalyticsMetric
 					label="Decision Stability"
 					value={stability}
+					isDark={isDark}
 					description="Resilience to input perturbations — low means small changes could flip the result"
 					barColor={stability >= 0.5 ? 'bg-emerald-500' : stability >= 0.25 ? 'bg-amber-500' : 'bg-rose-500'}
 				/>
 			</View>
 			{/* Interpretation */}
-			<View className="mt-3 pt-3 border-t border-slate-800/60">
+			<View className={`mt-3 pt-3 border-t ${isDark ? 'border-slate-800/60' : 'border-slate-200'}`}>
 				<Text className={`text-[11px] leading-[16px] ${verdict.color}`}>
 					{verdict.text}
 				</Text>
@@ -213,50 +223,51 @@ const PredictionAnalytics = ({ probability, threshold }) => {
 	);
 };
 
-const riskBadgeStyles = {
-	safe: {
-		container: 'border-emerald-500/40 bg-emerald-500/10',
-		text: 'text-emerald-100',
-	},
-	borderline: {
-		container: 'border-amber-400/40 bg-amber-400/10',
-		text: 'text-amber-50',
-	},
-	watch: {
-		container: 'border-orange-400/40 bg-orange-500/10',
-		text: 'text-orange-100',
-	},
-	unsafe: {
-		container: 'border-rose-500/60 bg-rose-500/10',
-		text: 'text-rose-100',
-	},
-	default: {
-		container: 'border-slate-700 bg-slate-800/60',
-		text: 'text-slate-200',
-	},
+const getRiskBadgeStyle = (riskLevel, isDark) => {
+	if (riskLevel === 'safe') {
+		return isDark
+			? { container: 'border-emerald-500/40 bg-emerald-500/10', text: 'text-emerald-100' }
+			: { container: 'border-emerald-300 bg-emerald-100', text: 'text-emerald-800' };
+	}
+	if (riskLevel === 'borderline') {
+		return isDark
+			? { container: 'border-amber-400/40 bg-amber-400/10', text: 'text-amber-50' }
+			: { container: 'border-amber-300 bg-amber-100', text: 'text-amber-800' };
+	}
+	if (riskLevel === 'watch') {
+		return isDark
+			? { container: 'border-orange-400/40 bg-orange-500/10', text: 'text-orange-100' }
+			: { container: 'border-orange-300 bg-orange-100', text: 'text-orange-800' };
+	}
+	if (riskLevel === 'unsafe') {
+		return isDark
+			? { container: 'border-rose-500/60 bg-rose-500/10', text: 'text-rose-100' }
+			: { container: 'border-rose-300 bg-rose-100', text: 'text-rose-800' };
+	}
+	return isDark
+		? { container: 'border-slate-700 bg-slate-800/60', text: 'text-slate-200' }
+		: { container: 'border-slate-300 bg-slate-100', text: 'text-slate-800' };
 };
 
-const parameterSeverityStyles = {
-	ok: {
-		container: 'border-emerald-500/30 bg-emerald-500/5',
-		badge: 'text-emerald-200',
-	},
-	warning: {
-		container: 'border-amber-400/40 bg-amber-500/10',
-		badge: 'text-amber-200',
-	},
-	critical: {
-		container: 'border-rose-500/60 bg-rose-500/10',
-		badge: 'text-rose-200',
-	},
-	missing: {
-		container: 'border-slate-800 bg-slate-900/60',
-		badge: 'text-slate-400',
-	},
-	default: {
-		container: 'border-slate-800 bg-slate-900/60',
-		badge: 'text-slate-400',
-	},
+const getParameterSeverityStyle = (status, isDark) => {
+	if (status === 'ok') {
+		return isDark
+			? { container: 'border-emerald-500/30 bg-emerald-500/5', badge: 'text-emerald-200' }
+			: { container: 'border-emerald-300 bg-emerald-50', badge: 'text-emerald-700' };
+	}
+	if (status === 'warning') {
+		return isDark
+			? { container: 'border-amber-400/40 bg-amber-500/10', badge: 'text-amber-200' }
+			: { container: 'border-amber-300 bg-amber-50', badge: 'text-amber-700' };
+	}
+	if (status === 'critical') {
+		return isDark
+			? { container: 'border-rose-500/60 bg-rose-500/10', badge: 'text-rose-200' }
+			: { container: 'border-rose-300 bg-rose-50', badge: 'text-rose-700' };
+	}
+	return isDark
+		? { container: 'border-slate-800 bg-slate-900/60', badge: 'text-slate-400' }
+		: { container: 'border-slate-200 bg-slate-50', badge: 'text-slate-700' };
 };
 
 const formatNumericValue = (value) => {
@@ -298,37 +309,56 @@ const parameterGroupMeta = {
 
 const normalizeFieldKey = (field = '') => field.toLowerCase();
 
-const microbialRiskStyles = {
-	high: {
-		container: 'border-rose-500/60 bg-rose-500/10',
-		badge: 'bg-rose-500/20',
-		text: 'text-rose-100',
-		badgeText: 'text-rose-300',
-		icon: '🔴',
-		barColor: 'bg-rose-500',
-		summaryBg: 'bg-rose-900/60',
-		summaryBorder: 'border-rose-500/30',
-	},
-	medium: {
-		container: 'border-amber-400/40 bg-amber-400/10',
-		badge: 'bg-amber-500/20',
-		text: 'text-amber-100',
-		badgeText: 'text-amber-300',
-		icon: '🟡',
-		barColor: 'bg-amber-500',
-		summaryBg: 'bg-amber-900/60',
-		summaryBorder: 'border-amber-500/30',
-	},
-	low: {
-		container: 'border-emerald-500/40 bg-emerald-500/10',
-		badge: 'bg-emerald-500/20',
-		text: 'text-emerald-100',
-		badgeText: 'text-emerald-300',
-		icon: '🟢',
-		barColor: 'bg-emerald-500',
-		summaryBg: 'bg-emerald-900/60',
-		summaryBorder: 'border-emerald-500/30',
-	},
+const getMicrobialRiskStyle = (riskLevel, isDark) => {
+	if (riskLevel === 'high') {
+		return isDark
+			? {
+				container: 'border-rose-500/60 bg-rose-500/10',
+				badge: 'bg-rose-500/20',
+				text: 'text-rose-100',
+				badgeText: 'text-rose-300',
+				icon: '🔴',
+			}
+			: {
+				container: 'border-rose-300 bg-rose-100',
+				badge: 'bg-rose-200',
+				text: 'text-rose-800',
+				badgeText: 'text-rose-800',
+				icon: '🔴',
+			};
+	}
+	if (riskLevel === 'medium') {
+		return isDark
+			? {
+				container: 'border-amber-400/40 bg-amber-400/10',
+				badge: 'bg-amber-500/20',
+				text: 'text-amber-100',
+				badgeText: 'text-amber-300',
+				icon: '🟡',
+			}
+			: {
+				container: 'border-amber-300 bg-amber-100',
+				badge: 'bg-amber-200',
+				text: 'text-amber-800',
+				badgeText: 'text-amber-800',
+				icon: '🟡',
+			};
+	}
+	return isDark
+		? {
+			container: 'border-emerald-500/40 bg-emerald-500/10',
+			badge: 'bg-emerald-500/20',
+			text: 'text-emerald-100',
+			badgeText: 'text-emerald-300',
+			icon: '🟢',
+		}
+		: {
+			container: 'border-emerald-300 bg-emerald-100',
+			badge: 'bg-emerald-200',
+			text: 'text-emerald-800',
+			badgeText: 'text-emerald-800',
+			icon: '🟢',
+		};
 };
 
 const FIELD_DISPLAY_NAMES = {
@@ -362,7 +392,7 @@ const buildBacteriaFrequency = (violations) => {
 	return Object.entries(freq).sort((a, b) => b[1].length - a[1].length);
 };
 
-const MicrobialRiskSection = ({ result, children }) => {
+const MicrobialRiskSection = ({ result, children, isDark = true }) => {
 	const riskLevel = result?.microbialRiskLevel || result?.microbial_risk_level;
 
 	// Debug: log to console so we can verify data presence
@@ -370,18 +400,18 @@ const MicrobialRiskSection = ({ result, children }) => {
 
 	if (!riskLevel) {
 		return (
-			<View className="mt-6 rounded-[28px] border border-slate-700 bg-slate-900/60 p-4">
-				<Text className="text-[12px] font-semibold uppercase tracking-wide text-slate-400">
+			<View className={`mt-6 rounded-[28px] border p-4 ${isDark ? 'border-slate-700 bg-slate-900/60' : 'border-slate-200 bg-white'}`}>
+				<Text className={`text-[12px] font-semibold uppercase tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
 					Microbial Risk
 				</Text>
-				<Text className="text-[11px] text-slate-500 mt-1">
+				<Text className={`text-[11px] mt-1 ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>
 					Risk data unavailable. Check backend connection.
 				</Text>
 			</View>
 		);
 	}
 
-	const style = microbialRiskStyles[riskLevel] || microbialRiskStyles.low;
+	const style = getMicrobialRiskStyle(riskLevel, isDark);
 	const violations = result?.microbialViolations || result?.microbial_violations || [];
 	const bacteria = result?.possibleBacteria || result?.possible_bacteria || [];
 	const probabilities = result?.microbialRiskProbabilities || result?.microbial_risk_probabilities || {};
@@ -394,7 +424,7 @@ const MicrobialRiskSection = ({ result, children }) => {
 			{/* ─── Risk Header Card ─── */}
 			<View className={`rounded-[28px] border p-5 ${style.container}`}>
 				<View className="flex-row items-center justify-between mb-1">
-					<Text className="text-[13px] font-bold uppercase tracking-[3px] text-slate-300">
+					<Text className={`text-[13px] font-bold uppercase tracking-[3px] ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
 						Microbial Risk
 					</Text>
 					<View className={`rounded-full px-3.5 py-1.5 ${style.badge}`}>
@@ -412,19 +442,19 @@ const MicrobialRiskSection = ({ result, children }) => {
 				{/* Score gauge */}
 				<View className="mt-4">
 					<View className="flex-row items-center justify-between mb-1.5">
-						<Text className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+						<Text className={`text-[10px] font-semibold uppercase tracking-wide ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>
 							Composite Risk Score
 						</Text>
-						<Text className="text-[13px] font-bold text-slate-200">{score} / {maxScore}</Text>
+						<Text className={`text-[13px] font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{score} / {maxScore}</Text>
 					</View>
-					<View className="h-3 rounded-full bg-slate-800/80 overflow-hidden flex-row">
+					<View className={`h-3 rounded-full overflow-hidden flex-row ${isDark ? 'bg-slate-800/80' : 'bg-slate-200'}`}>
 						{/* Segmented gauge: green → amber → red */}
 						{[
 							{ pct: Math.min(score / maxScore, 0.2) / 0.2, color: 'bg-emerald-500', width: 20 },
 							{ pct: Math.max(0, Math.min((score / maxScore - 0.2) / 0.2, 1)), color: 'bg-amber-500', width: 20 },
 							{ pct: Math.max(0, Math.min((score / maxScore - 0.4) / 0.6, 1)), color: 'bg-rose-500', width: 60 },
 						].map((seg, i) => (
-							<View key={i} className="h-full bg-slate-800/40" style={{ width: `${seg.width}%` }}>
+							<View key={i} className={`h-full ${isDark ? 'bg-slate-800/40' : 'bg-slate-200'}`} style={{ width: `${seg.width}%` }}>
 								{seg.pct > 0 && (
 									<View className={`h-full ${seg.color}`} style={{ width: `${Math.min(seg.pct * 100, 100)}%` }} />
 								)}
@@ -440,8 +470,8 @@ const MicrobialRiskSection = ({ result, children }) => {
 
 				{/* ML class probabilities */}
 				{Object.keys(probabilities).length > 0 && (
-					<View className="mt-4 rounded-xl border border-slate-800/50 bg-slate-900/50 p-3">
-						<Text className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 mb-2">
+					<View className={`mt-4 rounded-xl border p-3 ${isDark ? 'border-slate-800/50 bg-slate-900/50' : 'border-slate-200 bg-white/80'}`}>
+						<Text className={`text-[10px] font-semibold uppercase tracking-wide mb-2 ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>
 							ML Model Prediction
 						</Text>
 						<View className="gap-2">
@@ -453,16 +483,16 @@ const MicrobialRiskSection = ({ result, children }) => {
 									<View key={level} className="flex-row items-center gap-2.5">
 										<View className="w-[52px] flex-row items-center gap-1">
 											{isSelected && <View className={`w-1.5 h-1.5 rounded-full ${barStyle}`} />}
-											<Text className={`text-[10px] capitalize ${isSelected ? 'font-bold text-slate-200' : 'text-slate-500'}`}>
+											<Text className={`text-[10px] capitalize ${isSelected ? (isDark ? 'font-bold text-slate-200' : 'font-bold text-slate-800') : (isDark ? 'text-slate-500' : 'text-slate-600')}`}>
 												{level}
 											</Text>
 										</View>
-										<View className="flex-1 h-2 rounded-full bg-slate-800 overflow-hidden">
+										<View className={`flex-1 h-2 rounded-full overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`}>
 											<View className={`h-full rounded-full ${barStyle} ${isSelected ? 'opacity-100' : 'opacity-40'}`}
 												style={{ width: `${Math.round(prob * 100)}%` }}
 											/>
 										</View>
-										<Text className={`text-[11px] w-11 text-right ${isSelected ? 'font-bold text-slate-200' : 'text-slate-500'}`}>
+										<Text className={`text-[11px] w-11 text-right ${isSelected ? (isDark ? 'font-bold text-slate-200' : 'font-bold text-slate-800') : (isDark ? 'text-slate-500' : 'text-slate-600')}`}>
 											{Math.round(prob * 100)}%
 										</Text>
 									</View>
@@ -478,11 +508,11 @@ const MicrobialRiskSection = ({ result, children }) => {
 
 			{/* ─── Violations Detail ─── */}
 			{violations.length > 0 && (
-				<View className="mt-4 rounded-[28px] border border-slate-900 bg-slate-900/70 p-5">
-					<Text className="text-[12px] font-semibold uppercase tracking-wide text-slate-400 mb-1">
+				<View className={`mt-4 rounded-[28px] border p-5 ${isDark ? 'border-slate-900 bg-slate-900/70' : 'border-slate-200 bg-white'}`}>
+					<Text className={`text-[12px] font-semibold uppercase tracking-wide mb-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
 						WHO Threshold Violations
 					</Text>
-					<Text className="text-[10px] text-slate-600 mb-4">
+					<Text className={`text-[10px] mb-4 ${isDark ? 'text-slate-600' : 'text-slate-500'}`}>
 						{violations.length} parameter{violations.length > 1 ? 's' : ''} exceeded safe thresholds
 					</Text>
 
@@ -493,19 +523,19 @@ const MicrobialRiskSection = ({ result, children }) => {
 							const weightDots = '●'.repeat(v.weight) + '○'.repeat(3 - Math.min(v.weight, 3));
 
 							return (
-								<View key={i} className="rounded-2xl border border-slate-800/60 bg-slate-900/40 overflow-hidden">
+								<View key={i} className={`rounded-2xl border overflow-hidden ${isDark ? 'border-slate-800/60 bg-slate-900/40' : 'border-slate-200 bg-slate-50'}`}>
 									{/* Violation header */}
 									<View className="flex-row items-center justify-between px-4 pt-3 pb-2">
 										<View className="flex-1">
-											<Text className="text-[13px] font-semibold text-slate-100">{fieldName}</Text>
-											<Text className="text-[10px] text-slate-500 mt-0.5">{v.rule}</Text>
+											<Text className={`text-[13px] font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>{fieldName}</Text>
+											<Text className={`text-[10px] mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>{v.rule}</Text>
 										</View>
 										<View className="items-end">
-											<Text className="text-[14px] font-bold text-slate-200">
+											<Text className={`text-[14px] font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
 												{v.value != null ? Number(v.value).toFixed(2) : '—'}
-												{unit ? <Text className="text-[10px] font-normal text-slate-500"> {unit}</Text> : null}
+												{unit ? <Text className={`text-[10px] font-normal ${isDark ? 'text-slate-500' : 'text-slate-600'}`}> {unit}</Text> : null}
 											</Text>
-											<Text className="text-[9px] text-slate-600 mt-0.5">severity {weightDots}</Text>
+											<Text className={`text-[9px] mt-0.5 ${isDark ? 'text-slate-600' : 'text-slate-500'}`}>severity {weightDots}</Text>
 										</View>
 									</View>
 
@@ -515,8 +545,8 @@ const MicrobialRiskSection = ({ result, children }) => {
 											{(v.healthRisk || v.health_risk) ? (
 												<View className="flex-row items-start gap-1.5">
 													<Text className="text-[10px] text-rose-400 mt-px">⚕</Text>
-													<Text className="text-[10px] text-slate-400 flex-1">
-														<Text className="text-slate-500 font-semibold">Health risk: </Text>
+													<Text className={`text-[10px] flex-1 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
+														<Text className={`${isDark ? 'text-slate-500' : 'text-slate-600'} font-semibold`}>Health risk: </Text>
 														{v.healthRisk || v.health_risk}
 													</Text>
 												</View>
@@ -524,8 +554,8 @@ const MicrobialRiskSection = ({ result, children }) => {
 											{v.biofilm ? (
 												<View className="flex-row items-start gap-1.5">
 													<Text className="text-[10px] text-sky-400 mt-px">◎</Text>
-													<Text className="text-[10px] text-slate-400 flex-1">
-														<Text className="text-slate-500 font-semibold">Biofilm: </Text>
+													<Text className={`text-[10px] flex-1 ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>
+														<Text className={`${isDark ? 'text-slate-500' : 'text-slate-600'} font-semibold`}>Biofilm: </Text>
 														{v.biofilm}
 													</Text>
 												</View>
@@ -538,8 +568,8 @@ const MicrobialRiskSection = ({ result, children }) => {
 										<View className="px-4 pb-3 pt-1">
 											<View className="flex-row flex-wrap gap-1.5">
 												{v.bacteria.map((b, j) => (
-													<View key={j} className="rounded-full bg-slate-800 border border-slate-700 px-2 py-0.5">
-														<Text className="text-[9px] font-medium text-slate-300 italic">{b}</Text>
+													<View key={j} className={`rounded-full border px-2 py-0.5 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+														<Text className={`text-[9px] font-medium italic ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{b}</Text>
 													</View>
 												))}
 											</View>
@@ -554,11 +584,11 @@ const MicrobialRiskSection = ({ result, children }) => {
 
 			{/* ─── Bacteria Cross-Reference Panel ─── */}
 			{bacteriaFreq.length > 0 && (
-				<View className="mt-4 rounded-[28px] border border-slate-900 bg-slate-900/70 p-5">
-					<Text className="text-[12px] font-semibold uppercase tracking-wide text-slate-400 mb-1">
+				<View className={`mt-4 rounded-[28px] border p-5 ${isDark ? 'border-slate-900 bg-slate-900/70' : 'border-slate-200 bg-white'}`}>
+					<Text className={`text-[12px] font-semibold uppercase tracking-wide mb-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
 						Possible Microbial Concerns
 					</Text>
-					<Text className="text-[10px] text-slate-600 mb-4">
+					<Text className={`text-[10px] mb-4 ${isDark ? 'text-slate-600' : 'text-slate-500'}`}>
 						{bacteriaFreq.length} organism{bacteriaFreq.length > 1 ? 's' : ''} identified from {violations.length} violation{violations.length > 1 ? 's' : ''}
 					</Text>
 
@@ -567,9 +597,9 @@ const MicrobialRiskSection = ({ result, children }) => {
 							const crossRefCount = sources.length;
 							const threatLevel = crossRefCount >= 3 ? 'high' : crossRefCount >= 2 ? 'medium' : 'low';
 							const threatColors = {
-						high: { border: 'border-rose-500/40', bg: 'bg-rose-500/10', dot: 'bg-rose-500', text: 'text-rose-300' },
-						medium: { border: 'border-amber-400/30', bg: 'bg-amber-500/10', dot: 'bg-amber-500', text: 'text-amber-300' },
-								low: { border: 'border-slate-700/60', bg: 'bg-slate-900/40', dot: 'bg-slate-500', text: 'text-slate-400' },
+								high: { border: 'border-rose-500/40', bg: 'bg-rose-500/10', dot: 'bg-rose-500', text: isDark ? 'text-rose-300' : 'text-rose-700' },
+								medium: { border: 'border-amber-400/30', bg: 'bg-amber-500/10', dot: 'bg-amber-500', text: isDark ? 'text-amber-300' : 'text-amber-700' },
+								low: { border: isDark ? 'border-slate-700/60' : 'border-slate-200', bg: isDark ? 'bg-slate-900/40' : 'bg-slate-50', dot: 'bg-slate-500', text: isDark ? 'text-slate-400' : 'text-slate-600' },
 							};
 							const tc = threatColors[threatLevel];
 
@@ -578,11 +608,11 @@ const MicrobialRiskSection = ({ result, children }) => {
 									<View className="flex-row items-center justify-between">
 										<View className="flex-row items-center gap-2 flex-1">
 											<View className={`w-2 h-2 rounded-full ${tc.dot}`} />
-											<Text className="text-[12px] font-semibold text-slate-200 italic flex-1" numberOfLines={1}>
+											<Text className={`text-[12px] font-semibold italic flex-1 ${isDark ? 'text-slate-200' : 'text-slate-800'}`} numberOfLines={1}>
 												{bacterium}
 											</Text>
 										</View>
-										<View className={`rounded-full px-2 py-0.5 bg-slate-800`}>
+										<View className={`rounded-full px-2 py-0.5 ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`}>
 											<Text className={`text-[9px] font-bold ${tc.text}`}>
 												{crossRefCount} source{crossRefCount > 1 ? 's' : ''}
 											</Text>
@@ -590,7 +620,7 @@ const MicrobialRiskSection = ({ result, children }) => {
 									</View>
 									<View className="flex-row flex-wrap gap-1 mt-1.5">
 										{sources.map((src, j) => (
-											<Text key={j} className="text-[9px] text-slate-500 bg-slate-800/60 rounded px-1.5 py-0.5">
+											<Text key={j} className={`text-[9px] rounded px-1.5 py-0.5 ${isDark ? 'text-slate-500 bg-slate-800/60' : 'text-slate-600 bg-slate-100'}`}>
 												{FIELD_DISPLAY_NAMES[src] || src}
 											</Text>
 										))}
@@ -603,10 +633,16 @@ const MicrobialRiskSection = ({ result, children }) => {
 			)}
 
 			{violations.length === 0 && (
-				<View className="mt-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3">
+				<View
+					className={`mt-4 rounded-2xl border px-4 py-3 ${
+						isDark ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-emerald-300 bg-emerald-100'
+					}`}
+				>
 					<View className="flex-row items-center gap-2">
 						<Text className="text-[14px]">✓</Text>
-						<Text className="text-[12px] font-semibold text-emerald-200">All parameters within WHO thresholds</Text>
+						<Text className={`text-[12px] font-semibold ${isDark ? 'text-emerald-200' : 'text-emerald-800'}`}>
+							All parameters within WHO thresholds
+						</Text>
 					</View>
 				</View>
 			)}
@@ -615,7 +651,7 @@ const MicrobialRiskSection = ({ result, children }) => {
 };
 
 /* ─── Filtration suggestion card + chat modal ─── */
-const FiltrationChatCard = ({ result }) => {
+const FiltrationChatCard = ({ result, isDark = true }) => {
 	const [suggestion, setSuggestion] = useState(null);
 	const [suggestionLoading, setSuggestionLoading] = useState(false);
 	const [suggestionError, setSuggestionError] = useState('');
@@ -658,23 +694,23 @@ const FiltrationChatCard = ({ result }) => {
 	const sendEnabled = !chatLoading && chatInput.trim().length > 0;
 
 	return (
-		<View className="mt-4 rounded-[28px] border border-sky-500/30 bg-sky-900/40 p-5">
+		<View className={`mt-4 rounded-[28px] border p-5 ${isDark ? 'border-sky-500/30 bg-sky-900/40' : 'border-sky-200 bg-sky-50'}`}>
 			<View className="flex-row items-center justify-between mb-2">
 				<View className="flex-row items-center gap-2">
 					<Text className="text-[14px]">💧</Text>
-					<Text className="text-[12px] font-semibold uppercase tracking-wide text-sky-300">
+					<Text className={`text-[12px] font-semibold uppercase tracking-wide ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>
 						Filtration Advice
 					</Text>
 				</View>
 				<View className="rounded-full border border-sky-500/40 px-2 py-0.5">
-					<Text className="text-[9px] font-semibold text-sky-400">GEMINI AI</Text>
+					<Text className={`text-[9px] font-semibold ${isDark ? 'text-sky-400' : 'text-sky-700'}`}>GEMINI AI</Text>
 				</View>
 			</View>
 
 			{suggestionLoading ? (
 				<View className="items-center py-4">
 					<ActivityIndicator color="#38bdf8" size="small" />
-					<Text className="text-[11px] text-sky-400 mt-2">Analyzing treatment options...</Text>
+					<Text className={`text-[11px] mt-2 ${isDark ? 'text-sky-400' : 'text-sky-700'}`}>Analyzing treatment options...</Text>
 				</View>
 			) : suggestionError ? (
 				<View>
@@ -695,16 +731,16 @@ const FiltrationChatCard = ({ result }) => {
 					</TouchableOpacity>
 				</View>
 			) : suggestion ? (
-				<Text className="text-[12px] text-slate-300 leading-[18px]">{suggestion}</Text>
+				<Text className={`text-[12px] leading-[18px] ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{suggestion}</Text>
 			) : null}
 
 			{/* Button to open chat modal */}
 			<TouchableOpacity
 				activeOpacity={0.85}
 				onPress={() => setChatOpen(true)}
-				className="mt-4 rounded-2xl border border-slate-700 bg-slate-900/70 px-4 py-3"
+				className={`mt-4 rounded-2xl border px-4 py-3 ${isDark ? 'border-slate-700 bg-slate-900/70' : 'border-slate-300 bg-white'}`}
 			>
-				<Text className="text-[12px] text-slate-400">
+				<Text className={`text-[12px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
 					Ask about treatment methods, costs, or WHO guidelines...
 				</Text>
 			</TouchableOpacity>
@@ -716,16 +752,16 @@ const FiltrationChatCard = ({ result }) => {
 				transparent
 				onRequestClose={() => setChatOpen(false)}
 			>
-				<View className="flex-1 bg-black/70 px-5 py-10">
+				<View className={`flex-1 px-5 py-10 ${isDark ? 'bg-black/70' : 'bg-slate-900/45'}`}>
 					<View className="flex-1 justify-center">
-						<View className="max-h-[85%] rounded-[32px] border border-sky-900/80 bg-slate-950/95 p-5">
+						<View className={`max-h-[85%] rounded-[32px] border p-5 ${isDark ? 'border-sky-900/80 bg-slate-950/95' : 'border-sky-200 bg-white'}`}>
 							{/* Header */}
 							<View className="flex-row items-center justify-between">
 								<View>
-									<Text className="text-[16px] font-semibold text-sky-50">
+									<Text className={`text-[16px] font-semibold ${isDark ? 'text-sky-50' : 'text-sky-900'}`}>
 										WaterOps Copilot
 									</Text>
-									<Text className="text-[12px] text-slate-400">
+									<Text className={`text-[12px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
 										Filtration & treatment assistant
 									</Text>
 								</View>
@@ -734,9 +770,9 @@ const FiltrationChatCard = ({ result }) => {
 									accessibilityLabel="Close chat"
 									activeOpacity={0.8}
 									onPress={() => setChatOpen(false)}
-									className="h-10 w-10 items-center justify-center rounded-full border border-slate-800/70"
+									className={`h-10 w-10 items-center justify-center rounded-full border ${isDark ? 'border-slate-800/70' : 'border-slate-300'}`}
 								>
-									<Text className="text-[16px] font-semibold text-sky-100">✕</Text>
+									<Text className={`text-[16px] font-semibold ${isDark ? 'text-sky-100' : 'text-sky-900'}`}>✕</Text>
 								</TouchableOpacity>
 							</View>
 
@@ -749,7 +785,7 @@ const FiltrationChatCard = ({ result }) => {
 								style={{ maxHeight: 360 }}
 							>
 								{chatHistory.length === 0 && (
-									<Text className="text-[11px] text-slate-500 py-3">
+									<Text className={`text-[11px] py-3 ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>
 										Ask about treatment methods, cost alternatives, or WHO guidelines for this sample.
 									</Text>
 								)}
@@ -757,11 +793,11 @@ const FiltrationChatCard = ({ result }) => {
 									<View
 										key={i}
 										className={msg.role === 'user'
-											? 'max-w-[85%] rounded-2xl px-4 py-3 self-end bg-sky-500/15 border border-sky-500/30'
-											: 'max-w-[85%] rounded-2xl px-4 py-3 self-start border border-slate-800/80 bg-slate-900/80'
+											? `max-w-[85%] rounded-2xl px-4 py-3 self-end ${isDark ? 'bg-sky-500/15 border border-sky-500/30' : 'bg-sky-100 border border-sky-300'}`
+											: `max-w-[85%] rounded-2xl px-4 py-3 self-start border ${isDark ? 'border-slate-800/80 bg-slate-900/80' : 'border-slate-200 bg-slate-100'}`
 										}
 									>
-										<Text className="text-[13px] text-sky-50 leading-[18px]">{msg.text}</Text>
+										<Text className={`text-[13px] leading-[18px] ${isDark ? 'text-sky-50' : 'text-slate-900'}`}>{msg.text}</Text>
 									</View>
 								))}
 								{chatLoading && (
@@ -775,9 +811,9 @@ const FiltrationChatCard = ({ result }) => {
 							{/* Input */}
 							<View className="mt-4 flex-row items-center gap-3">
 								<TextInput
-									className="flex-1 rounded-2xl border border-slate-800/70 bg-slate-900/80 px-4 py-3 text-sky-100"
+									className={`flex-1 rounded-2xl border px-4 py-3 ${isDark ? 'border-slate-800/70 bg-slate-900/80 text-sky-100' : 'border-slate-300 bg-white text-slate-900'}`}
 									placeholder="Ask about filtration..."
-									placeholderTextColor="#94a3b8"
+									placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
 									value={chatInput}
 									onChangeText={setChatInput}
 									onSubmitEditing={handleSendChat}
@@ -790,14 +826,14 @@ const FiltrationChatCard = ({ result }) => {
 									activeOpacity={0.85}
 									onPress={handleSendChat}
 									className={sendEnabled
-										? 'rounded-2xl border border-sky-400/60 bg-sky-500/80 px-4 py-3'
-										: 'rounded-2xl bg-slate-800 px-4 py-3'
+										? `rounded-2xl border border-sky-400/60 px-4 py-3 ${isDark ? 'bg-sky-500/80' : 'bg-sky-500/90'}`
+										: `rounded-2xl px-4 py-3 ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`
 									}
 									disabled={!sendEnabled}
 								>
 									<Text className={sendEnabled
 										? 'text-[13px] font-semibold text-slate-950'
-										: 'text-[13px] font-semibold text-slate-600'
+										: `text-[13px] font-semibold ${isDark ? 'text-slate-600' : 'text-slate-500'}`
 									}>Send</Text>
 								</TouchableOpacity>
 							</View>
@@ -810,11 +846,12 @@ const FiltrationChatCard = ({ result }) => {
 };
 
 const WaterResultScreen = ({ visible, onClose, result }) => {
+	const { isDark } = useAppTheme();
 	if (!result) {
 		return null;
 	}
 
-	const riskStyle = riskBadgeStyles[result.riskLevel] || riskBadgeStyles.default;
+	const riskStyle = getRiskBadgeStyle(result.riskLevel, isDark);
 	const timestampLabel = result.timestamp
 		? new Date(result.timestamp).toLocaleString()
 		: 'timestamp pending';
@@ -834,16 +871,16 @@ const WaterResultScreen = ({ visible, onClose, result }) => {
 			presentationStyle="fullScreen"
 			onRequestClose={onClose}
 		>
-			<SafeAreaView className="flex-1 bg-slate-950">
-				<View className="flex-row items-center justify-between border-b border-slate-900 px-5 py-4">
-						<Text className="text-[12px] font-semibold uppercase tracking-[4px] text-slate-400">Potability verdict</Text>
+			<SafeAreaView className={`flex-1 ${isDark ? 'bg-slate-950' : 'bg-slate-100'}`}>
+				<View className={`flex-row items-center justify-between border-b px-5 py-4 ${isDark ? 'border-slate-900' : 'border-slate-300'}`}>
+						<Text className={`text-[12px] font-semibold uppercase tracking-[4px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Potability verdict</Text>
 						<TouchableOpacity
 							accessibilityRole="button"
 							onPress={onClose}
-							className="rounded-full border border-slate-700 bg-slate-900 px-4 py-1.5"
+							className={`rounded-full border px-4 py-1.5 ${isDark ? 'border-slate-700 bg-slate-900' : 'border-slate-300 bg-white'}`}
 							activeOpacity={0.85}
 						>
-							<Text className="text-[12px] font-semibold text-slate-100">Close</Text>
+							<Text className={`text-[12px] font-semibold ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>Close</Text>
 						</TouchableOpacity>
 					</View>
 
@@ -852,9 +889,9 @@ const WaterResultScreen = ({ visible, onClose, result }) => {
 						contentContainerStyle={{ paddingBottom: 32 }}
 						showsVerticalScrollIndicator={false}
 					>
-						<View className="mt-5 rounded-[30px] border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-5">
+						<View className={`mt-5 rounded-[30px] border p-5 ${isDark ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-white'}`}>
 							<View className="flex-row items-center justify-between">
-								<Text className="text-[28px] font-semibold text-sky-50">
+								<Text className={`text-[28px] font-semibold ${isDark ? 'text-sky-50' : 'text-sky-900'}`}>
 									{result.isPotable ? 'Potable' : 'Not potable'}
 								</Text>
 								<View className={`rounded-full px-3 py-1 ${riskStyle.container}`}>
@@ -863,7 +900,7 @@ const WaterResultScreen = ({ visible, onClose, result }) => {
 									</Text>
 								</View>
 							</View>
-							<Text className="mt-2 text-[13px] text-slate-300">{result.message}</Text>
+							<Text className={`mt-2 text-[13px] ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{result.message}</Text>
 							<View className="mt-4 items-center justify-center">
 								<LottieView
 									source={getConfidenceAnimation(result.probability)}
@@ -873,71 +910,71 @@ const WaterResultScreen = ({ visible, onClose, result }) => {
 									style={{ width: GAUGE_WIDTH, height: GAUGE_WIDTH * 0.7 }}
 								/>
 							</View>
-							<View className="mt-4 rounded-2xl border border-slate-800 bg-slate-900/60 px-4 py-3">
-								<ConfidenceGauge probability={result.probability} threshold={0.5} />
-								<View className="mt-4 pt-3 border-t border-slate-800">
-									<Text className="text-[11px] text-slate-500">
+							<View className={`mt-4 rounded-2xl border px-4 py-3 ${isDark ? 'border-slate-800 bg-slate-900/60' : 'border-slate-200 bg-slate-50'}`}>
+								<ConfidenceGauge probability={result.probability} threshold={0.5} isDark={isDark} />
+								<View className={`mt-4 pt-3 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+									<Text className={`text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>
 									{timestampLabel} · {result.modelVersion}{result.sampleId ? ` · #${result.sampleId.slice(0, 8)}` : ''}
 								</Text>
 								</View>
 							</View>
-						<Text className={`mt-3 text-[11px] ${result.saved ? 'text-emerald-400' : 'text-slate-500'}`}>
+						<Text className={`mt-3 text-[11px] ${result.saved ? (isDark ? 'text-emerald-400' : 'text-emerald-700') : (isDark ? 'text-slate-500' : 'text-slate-600')}`}>
 							{result.saved ? '● Synced' : '○ Not synced'}
 							</Text>
 						</View>
 						{/* Microbial Risk Assessment — placed immediately after potability verdict */}
-						<MicrobialErrorBoundary>
-							<MicrobialRiskSection result={result}>
-								<FiltrationChatCard result={result} />
+						<MicrobialErrorBoundary isDark={isDark}>
+							<MicrobialRiskSection result={result} isDark={isDark}>
+								<FiltrationChatCard result={result} isDark={isDark} />
 							</MicrobialRiskSection>
 						</MicrobialErrorBoundary>
 
 						{groupedChecks.map((group) => (
-							<View key={group.title} className="mt-6 rounded-[28px] border border-slate-900 bg-slate-950/70 p-5">
-								<Text className="text-[12px] font-semibold uppercase tracking-wide text-slate-400">
+							<View key={group.title} className={`mt-6 rounded-[28px] border p-5 ${isDark ? 'border-slate-900 bg-slate-950/70' : 'border-slate-200 bg-white'}`}>
+								<Text className={`text-[12px] font-semibold uppercase tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
 									{group.title}
 								</Text>
 								{group.checks.length ? (
 									<View className="mt-3 gap-3">
 										{group.checks.map((check) => {
-											const severity = parameterSeverityStyles[check.status] || parameterSeverityStyles.default;
+											const severity = getParameterSeverityStyle(check.status, isDark);
 											return (
 												<View
 													key={check.field}
 													className={`rounded-2xl border px-4 py-3 ${severity.container}`}
 												>
 													<View className="flex-row items-center justify-between">
-														<Text className="text-[13px] font-semibold text-slate-50">{check.label}</Text>
+														<Text className={`text-[13px] font-semibold ${isDark ? 'text-slate-50' : 'text-slate-900'}`}>{check.label}</Text>
 														<Text className={`text-[11px] font-semibold uppercase ${severity.badge}`}>
 															{(check.status || 'pending').toUpperCase()}
 														</Text>
 													</View>
-													<Text className="mt-1 text-[12px] text-slate-300">
+													<Text className={`mt-1 text-[12px] ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
 														Observed {formatNumericValue(check.value)} · Recommended {formatRecommendedRange(check.recommendedRange)}
 													</Text>
-													<Text className="mt-1 text-[12px] text-slate-400">{check.detail}</Text>
+													<Text className={`mt-1 text-[12px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{check.detail}</Text>
 													{typeof check.zScore === 'number' && Number.isFinite(check.zScore) ? (
-														<Text className="mt-0.5 text-[11px] text-slate-500">Z-score {check.zScore.toFixed(2)}</Text>
+														<Text className={`mt-0.5 text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>Z-score {check.zScore.toFixed(2)}</Text>
 													) : null}
 												</View>
 											);
 										})}
 									</View>
 								) : (
-									<Text className="mt-3 text-[12px] text-slate-500">No readings in this section.</Text>
+									<Text className={`mt-3 text-[12px] ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>No readings in this section.</Text>
 								)}
 							</View>
 						))}
 
 						{missingFeatures.length ? (
-							<View className="mt-6 rounded-[24px] border border-amber-500/30 bg-amber-500/5 p-4">
-								<Text className="text-[12px] font-semibold uppercase tracking-wide text-amber-200">
+							<View className={`mt-6 rounded-[24px] border p-4 ${isDark ? 'border-amber-500/30 bg-amber-500/5' : 'border-amber-300 bg-amber-50'}`}>
+								<Text className={`text-[12px] font-semibold uppercase tracking-wide ${isDark ? 'text-amber-200' : 'text-amber-800'}`}>
 									Missing inputs
 								</Text>
 								<View className="mt-3 flex-row flex-wrap gap-2">
 									{missingFeatures.map((field) => (
-										<View key={field} className="rounded-full border border-amber-300/40 bg-amber-300/10 px-3 py-1">
-											<Text className="text-[11px] font-semibold uppercase tracking-wide text-amber-100">
+										<View key={field} className={`rounded-full border px-3 py-1 ${isDark ? 'border-amber-300/40 bg-amber-300/10' : 'border-amber-300 bg-amber-100'}`}>
+											<Text className={`text-[11px] font-semibold uppercase tracking-wide ${isDark ? 'text-amber-100' : 'text-amber-800'}`}>
 												{field}
 											</Text>
 										</View>

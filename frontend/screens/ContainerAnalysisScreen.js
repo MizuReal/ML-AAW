@@ -2,8 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, Image, Animated } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import PredictButton from '../components/PredictButton';
+import { useAppTheme } from '../utils/theme';
 
 const ContainerAnalysisScreen = ({ onNavigate }) => {
+  const { isDark } = useAppTheme();
   const [image, setImage] = useState(null);
   const [error, setError] = useState('');
   const screenAnim = useRef(new Animated.Value(0)).current;
@@ -37,7 +39,7 @@ const ContainerAnalysisScreen = ({ onNavigate }) => {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-aquadark"
+      className={`flex-1 ${isDark ? 'bg-aquadark' : 'bg-slate-100'}`}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <Animated.View
@@ -58,19 +60,19 @@ const ContainerAnalysisScreen = ({ onNavigate }) => {
         <View className="mb-2 flex-row items-center justify-between">
           <TouchableOpacity
             activeOpacity={0.8}
-            className="rounded-full border border-sky-900/70 bg-aquadark/80 px-3 py-1.5"
+            className={`rounded-full border px-3 py-1.5 ${isDark ? 'border-sky-900/70 bg-aquadark/80' : 'border-slate-300 bg-slate-100'}`}
             onPress={() => onNavigate && onNavigate('home')}
           >
-            <Text className="text-[12px] font-medium text-sky-100">⟵ Dashboard</Text>
+            <Text className={`text-[12px] font-medium ${isDark ? 'text-sky-100' : 'text-slate-800'}`}>⟵ Dashboard</Text>
           </TouchableOpacity>
-          <View className="rounded-full border border-slate-800/70 bg-slate-950/70 px-3 py-1">
-            <Text className="text-[11px] font-semibold uppercase tracking-wide text-slate-300">
+          <View className={`rounded-full border px-3 py-1 ${isDark ? 'border-slate-800/70 bg-slate-950/70' : 'border-slate-300 bg-slate-100'}`}>
+            <Text className={`text-[11px] font-semibold uppercase tracking-wide ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
               Ops Live
             </Text>
           </View>
         </View>
-        <Text className="text-[22px] font-bold text-sky-100">Container analysis</Text>
-        <Text className="mt-1 text-[13px] text-slate-400">
+        <Text className={`text-[22px] font-bold ${isDark ? 'text-sky-100' : 'text-slate-800'}`}>Container analysis</Text>
+        <Text className={`mt-1 text-[13px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
           Capture a container image to estimate clarity, fill level and potential anomalies.
         </Text>
       </View>
@@ -80,11 +82,11 @@ const ContainerAnalysisScreen = ({ onNavigate }) => {
         contentContainerClassName="pb-10 gap-4"
         showsVerticalScrollIndicator={false}
       >
-        <View className="mt-1 rounded-2xl border border-sky-900/70 bg-sky-950/40 p-4">
-          <Text className="text-[11px] font-medium uppercase tracking-wide text-sky-300">
+        <View className={`mt-1 rounded-2xl border p-4 ${isDark ? 'border-sky-900/70 bg-sky-950/40' : 'border-slate-300 bg-sky-50'}`}>
+          <Text className={`text-[11px] font-medium uppercase tracking-wide ${isDark ? 'text-sky-300' : 'text-sky-600'}`}>
             Capture
           </Text>
-          <Text className="mt-1 text-[12px] text-slate-400">
+          <Text className={`mt-1 text-[12px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
             Use the camera to capture the current container or sampling bottle.
           </Text>
 
@@ -99,13 +101,13 @@ const ContainerAnalysisScreen = ({ onNavigate }) => {
           </View>
         </View>
 
-        <View className="rounded-2xl border border-sky-900/80 bg-aquadark/80 p-4">
-          <Text className="text-[11px] font-medium uppercase tracking-wide text-sky-300">
+        <View className={`rounded-2xl border p-4 ${isDark ? 'border-sky-900/80 bg-aquadark/80' : 'border-slate-300 bg-white'}`}>
+          <Text className={`text-[11px] font-medium uppercase tracking-wide ${isDark ? 'text-sky-300' : 'text-sky-600'}`}>
             Analysis snapshot
           </Text>
           {image ? (
             <View className="mt-3 flex-row gap-3">
-              <View className="h-28 w-24 overflow-hidden rounded-xl border border-sky-900/80 bg-slate-900">
+              <View className={`h-28 w-24 overflow-hidden rounded-xl border ${isDark ? 'border-sky-900/80 bg-slate-900' : 'border-slate-300 bg-slate-100'}`}>
                 <Image
                   source={{ uri: image.uri }}
                   className="h-full w-full"
@@ -113,21 +115,21 @@ const ContainerAnalysisScreen = ({ onNavigate }) => {
                 />
               </View>
               <View className="flex-1">
-                <Text className="text-[13px] font-semibold text-sky-100">
+                <Text className={`text-[13px] font-semibold ${isDark ? 'text-sky-100' : 'text-slate-800'}`}>
                   Container profile
                 </Text>
-                <Text className="mt-1 text-[12px] text-slate-400">
+                <Text className={`mt-1 text-[12px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                   Visual clarity appears within expected range. No strong color cast
                   or surface anomalies detected.
                 </Text>
-                <Text className="mt-2 text-[11px] text-slate-500">
+                <Text className={`mt-2 text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>
                   Final decision will combine this with pH, turbidity and nutrient
                   data from the dashboard.
                 </Text>
               </View>
             </View>
           ) : (
-            <Text className="mt-3 text-[12px] text-slate-500">
+            <Text className={`mt-3 text-[12px] ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>
               Once a photo is captured, a summary card will appear here with a
               container profile and integration notes for your physicochemical
               parameters.

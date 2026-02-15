@@ -17,6 +17,7 @@ import Filter from 'bad-words';
 import { supabase } from '../utils/supabaseClient';
 import LottieView from 'lottie-react-native';
 import forumAnim from '../assets/public/forumanim.json';
+import { useAppTheme } from '../utils/theme';
 
 const HIGHLIGHTS = [
   'AI-assisted water quality insights powered by field data and lab checks.',
@@ -52,6 +53,7 @@ const formatRelativeTime = (value) => {
 };
 
 const CommunityForumScreen = ({ onNavigate }) => {
+  const { isDark } = useAppTheme();
   const heroAnim = useRef(new Animated.Value(0)).current;
   const screenAnim = useRef(new Animated.Value(0)).current;
   const filter = useMemo(() => new Filter(), []);
@@ -550,24 +552,26 @@ const CommunityForumScreen = ({ onNavigate }) => {
       <View className="gap-5">
         <View className="px-5 pt-12 flex-row items-center justify-between">
           <TouchableOpacity
-            className="h-10 w-10 items-center justify-center rounded-2xl border border-sky-900/70 bg-slate-950/70"
+            className={`h-10 w-10 items-center justify-center rounded-2xl border ${isDark ? 'border-sky-900/70 bg-slate-950/70' : 'border-slate-300 bg-slate-100'}`}
             activeOpacity={0.85}
             onPress={() => onNavigate?.('home')}
           >
-            <Text className="text-xl text-sky-100">{'<'}</Text>
+            <Text className={`text-xl ${isDark ? 'text-sky-100' : 'text-slate-700'}`}>{'<'}</Text>
           </TouchableOpacity>
           <View className="items-center">
             <Text className="text-[12px] uppercase tracking-[3px] text-sky-500">
               Community
             </Text>
-            <Text className="text-[20px] font-semibold text-sky-50">Forum Feed</Text>
+            <Text className={`text-[20px] font-semibold ${isDark ? 'text-sky-50' : 'text-slate-900'}`}>Forum Feed</Text>
           </View>
           <TouchableOpacity
-            className="rounded-2xl border border-emerald-600/60 bg-emerald-900/30 px-3 py-2"
+            className={`rounded-2xl border px-3 py-2 ${
+              isDark ? 'border-emerald-600/60 bg-emerald-900/30' : 'border-emerald-300 bg-emerald-100'
+            }`}
             activeOpacity={0.85}
             onPress={loadForumData}
           >
-            <Text className="text-[11px] font-semibold uppercase text-emerald-200">
+            <Text className={`text-[11px] font-semibold uppercase ${isDark ? 'text-emerald-200' : 'text-emerald-800'}`}>
               Refresh
             </Text>
           </TouchableOpacity>
@@ -585,7 +589,11 @@ const CommunityForumScreen = ({ onNavigate }) => {
               },
             ],
           }}
-          className="mx-5 rounded-[30px] border border-sky-900/60 bg-gradient-to-br from-slate-950/90 via-sky-950/40 to-emerald-950/30 p-5"
+          className={`mx-5 rounded-[30px] border p-5 ${
+            isDark
+              ? 'border-sky-900/60 bg-gradient-to-br from-slate-950/90 via-sky-950/40 to-emerald-950/30'
+              : 'border-slate-300 bg-white'
+          }`}
         >
           <View className="items-center">
             <LottieView
@@ -598,14 +606,14 @@ const CommunityForumScreen = ({ onNavigate }) => {
           <Text className="text-[12px] uppercase tracking-wide text-sky-400">
             Collective insights
           </Text>
-          <Text className="mt-2 text-[20px] font-semibold text-sky-50">
+          <Text className={`mt-2 text-[20px] font-semibold ${isDark ? 'text-sky-50' : 'text-slate-900'}`}>
             Share field signals, lab wins, and policy drafts in one flow.
           </Text>
           <View className="mt-4 gap-3">
             {HIGHLIGHTS.map((item) => (
               <View key={item} className="flex-row items-start gap-2">
-                <Text className="text-lg text-emerald-300">-</Text>
-                <Text className="flex-1 text-[13px] text-slate-300">{item}</Text>
+                <Text className={`text-lg ${isDark ? 'text-emerald-300' : 'text-emerald-600'}`}>-</Text>
+                <Text className={`flex-1 text-[13px] ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{item}</Text>
               </View>
             ))}
           </View>
@@ -627,12 +635,12 @@ const CommunityForumScreen = ({ onNavigate }) => {
                 className={`rounded-2xl border px-4 py-2 ${
                   isActive
                     ? 'border-aquaaccent bg-aquaaccent/20'
-                    : 'border-sky-900/70 bg-slate-950/60'
+                    : isDark ? 'border-sky-900/70 bg-slate-950/60' : 'border-slate-300 bg-slate-100'
                 }`}
               >
                 <Text
                   className={`text-[13px] ${
-                    isActive ? 'text-aquaaccent' : 'text-slate-200'
+                    isActive ? 'text-aquaaccent' : isDark ? 'text-slate-200' : 'text-slate-700'
                   }`}
                 >
                   {tag.label}
@@ -643,18 +651,22 @@ const CommunityForumScreen = ({ onNavigate }) => {
         </ScrollView>
 
         {feedError ? (
-          <View className="mx-5 rounded-2xl border border-rose-900/60 bg-rose-950/40 px-4 py-3">
-            <Text className="text-[12px] text-rose-200">{feedError}</Text>
+          <View
+            className={`mx-5 rounded-2xl border px-4 py-3 ${
+              isDark ? 'border-rose-900/60 bg-rose-950/40' : 'border-rose-300 bg-rose-100'
+            }`}
+          >
+            <Text className={`text-[12px] ${isDark ? 'text-rose-200' : 'text-rose-700'}`}>{feedError}</Text>
           </View>
         ) : null}
       </View>
     ),
-    [heroAnim, onNavigate, tagFilters, selectedTag, feedError]
+    [heroAnim, onNavigate, tagFilters, selectedTag, feedError, isDark]
   );
 
   return (
     <Animated.View
-      className="flex-1 bg-aquadark"
+      className={`flex-1 ${isDark ? 'bg-aquadark' : 'bg-slate-100'}`}
       style={{
         opacity: screenAnim,
         transform: [
@@ -687,9 +699,9 @@ const CommunityForumScreen = ({ onNavigate }) => {
               <ActivityIndicator color="#5eead4" />
             </View>
           ) : (
-            <View className="mx-5 rounded-2xl border border-sky-900/60 bg-slate-950/60 px-4 py-6">
-              <Text className="text-[14px] font-semibold text-sky-50">No threads yet</Text>
-              <Text className="mt-2 text-[12px] text-slate-300">
+            <View className={`mx-5 rounded-2xl border px-4 py-6 ${isDark ? 'border-sky-900/60 bg-slate-950/60' : 'border-slate-300 bg-white'}`}>
+              <Text className={`text-[14px] font-semibold ${isDark ? 'text-sky-50' : 'text-slate-900'}`}>No threads yet</Text>
+              <Text className={`mt-2 text-[12px] ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                 Start a thread and share what your team is seeing in the field.
               </Text>
             </View>
@@ -707,51 +719,51 @@ const CommunityForumScreen = ({ onNavigate }) => {
       </TouchableOpacity>
 
       <Modal visible={composeVisible} transparent animationType="slide">
-        <View className="flex-1 bg-slate-950/95">
+        <View className={`flex-1 ${isDark ? 'bg-slate-950/95' : 'bg-slate-100/95'}`}>
           <KeyboardAvoidingView
             className="flex-1"
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           >
             <View className="px-5 pt-12 flex-row items-center justify-between">
-              <Text className="text-[18px] font-semibold text-sky-50">Start a thread</Text>
+              <Text className={`text-[18px] font-semibold ${isDark ? 'text-sky-50' : 'text-slate-900'}`}>Start a thread</Text>
               <TouchableOpacity
                 onPress={() => setComposeVisible(false)}
-                className="rounded-2xl border border-sky-900/70 bg-slate-950/70 px-3 py-2"
+                className={`rounded-2xl border px-3 py-2 ${isDark ? 'border-sky-900/70 bg-slate-950/70' : 'border-slate-300 bg-slate-100'}`}
               >
-                <Text className="text-[12px] text-sky-100">Close</Text>
+                <Text className={`text-[12px] ${isDark ? 'text-sky-100' : 'text-slate-800'}`}>Close</Text>
               </TouchableOpacity>
             </View>
 
             <ScrollView className="px-5" contentContainerClassName="pb-10">
-              <View className="mt-5 rounded-2xl border border-sky-900/60 bg-slate-950/60 px-4 py-3">
-                <Text className="text-[12px] uppercase tracking-wide text-sky-400">
+              <View className={`mt-5 rounded-2xl border px-4 py-3 ${isDark ? 'border-sky-900/60 bg-slate-950/60' : 'border-slate-300 bg-white'}`}>
+                <Text className={`text-[12px] uppercase tracking-wide ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>
                   Thread title
                 </Text>
                 <TextInput
                   value={composeTitle}
                   onChangeText={setComposeTitle}
                   placeholder="Summarize the issue or idea"
-                  placeholderTextColor="#94a3b8"
-                  className="mt-2 text-[14px] text-slate-100"
+                  placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
+                  className={`mt-2 text-[14px] ${isDark ? 'text-slate-100' : 'text-slate-800'}`}
                 />
               </View>
 
-              <View className="mt-4 rounded-2xl border border-sky-900/60 bg-slate-950/60 px-4 py-3">
-                <Text className="text-[12px] uppercase tracking-wide text-sky-400">
+              <View className={`mt-4 rounded-2xl border px-4 py-3 ${isDark ? 'border-sky-900/60 bg-slate-950/60' : 'border-slate-300 bg-white'}`}>
+                <Text className={`text-[12px] uppercase tracking-wide ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>
                   Details
                 </Text>
                 <TextInput
                   value={composeBody}
                   onChangeText={setComposeBody}
                   placeholder="Share context, data points, or questions"
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
                   multiline
-                  className="mt-2 min-h-[120px] text-[14px] text-slate-100"
+                  className={`mt-2 min-h-[120px] text-[14px] ${isDark ? 'text-slate-100' : 'text-slate-800'}`}
                 />
               </View>
 
               <View className="mt-5">
-                <Text className="text-[12px] uppercase tracking-wide text-sky-400">
+                <Text className={`text-[12px] uppercase tracking-wide ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>
                   Categories (up to {MAX_CATEGORIES})
                 </Text>
                 <View className="mt-3 flex-row flex-wrap gap-2">
@@ -764,12 +776,12 @@ const CommunityForumScreen = ({ onNavigate }) => {
                         className={`rounded-full border px-4 py-2 ${
                           active
                             ? 'border-aquaaccent bg-aquaaccent/20'
-                            : 'border-sky-900/70 bg-slate-950/60'
+                            : isDark ? 'border-sky-900/70 bg-slate-950/60' : 'border-slate-300 bg-slate-100'
                         }`}
                       >
                         <Text
                           className={`text-[12px] ${
-                            active ? 'text-aquaaccent' : 'text-slate-200'
+                            active ? 'text-aquaaccent' : isDark ? 'text-slate-200' : 'text-slate-700'
                           }`}
                         >
                           {category.label}
@@ -781,8 +793,12 @@ const CommunityForumScreen = ({ onNavigate }) => {
               </View>
 
               {composeError ? (
-                <View className="mt-4 rounded-2xl border border-rose-900/60 bg-rose-950/40 px-4 py-3">
-                  <Text className="text-[12px] text-rose-200">{composeError}</Text>
+                <View
+                  className={`mt-4 rounded-2xl border px-4 py-3 ${
+                    isDark ? 'border-rose-900/60 bg-rose-950/40' : 'border-rose-300 bg-rose-100'
+                  }`}
+                >
+                  <Text className={`text-[12px] ${isDark ? 'text-rose-200' : 'text-rose-700'}`}>{composeError}</Text>
                 </View>
               ) : null}
 
@@ -791,11 +807,15 @@ const CommunityForumScreen = ({ onNavigate }) => {
                 onPress={handleCreateThread}
                 disabled={composeLoading}
                 className={`mt-6 items-center rounded-2xl px-4 py-3 ${
-                  composeLoading ? 'bg-slate-700' : 'bg-aquaaccent'
+                  composeLoading
+                    ? isDark
+                      ? 'bg-slate-700'
+                      : 'bg-slate-300'
+                    : 'bg-aquaaccent'
                 }`}
               >
                 {composeLoading ? (
-                  <ActivityIndicator color="#0f172a" />
+                  <ActivityIndicator color={isDark ? '#e2e8f0' : '#0f172a'} />
                 ) : (
                   <Text className="text-[14px] font-semibold text-slate-950">Post thread</Text>
                 )}
@@ -806,18 +826,18 @@ const CommunityForumScreen = ({ onNavigate }) => {
       </Modal>
 
       <Modal visible={threadModalVisible} transparent animationType="slide">
-        <View className="flex-1 bg-slate-950/95">
+        <View className={`flex-1 ${isDark ? 'bg-slate-950/95' : 'bg-slate-100/95'}`}>
           <KeyboardAvoidingView
             className="flex-1"
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           >
             <View className="px-5 pt-12 flex-row items-center justify-between">
-              <Text className="text-[18px] font-semibold text-sky-50">Thread</Text>
+              <Text className={`text-[18px] font-semibold ${isDark ? 'text-sky-50' : 'text-slate-900'}`}>Thread</Text>
               <TouchableOpacity
                 onPress={closeThread}
-                className="rounded-2xl border border-sky-900/70 bg-slate-950/70 px-3 py-2"
+                className={`rounded-2xl border px-3 py-2 ${isDark ? 'border-sky-900/70 bg-slate-950/70' : 'border-slate-300 bg-slate-100'}`}
               >
-                <Text className="text-[12px] text-sky-100">Close</Text>
+                <Text className={`text-[12px] ${isDark ? 'text-sky-100' : 'text-slate-800'}`}>Close</Text>
               </TouchableOpacity>
             </View>
 
@@ -828,39 +848,47 @@ const CommunityForumScreen = ({ onNavigate }) => {
                 className="px-5"
                 contentContainerClassName="pb-24"
                 ListHeaderComponent={
-                  <View className="mt-5 rounded-[24px] border border-sky-900/70 bg-slate-950/60 p-4">
+                  <View
+                    className={`mt-5 rounded-[24px] border p-4 ${
+                      isDark ? 'border-sky-900/70 bg-slate-950/60' : 'border-slate-300 bg-white'
+                    }`}
+                  >
                     <View className="flex-row items-center justify-between">
                       <View className="flex-row items-center gap-3">
-                        <View className="h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-sky-800/70 bg-slate-950/70">
+                        <View
+                          className={`h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border ${
+                            isDark ? 'border-sky-800/70 bg-slate-950/70' : 'border-slate-300 bg-slate-100'
+                          }`}
+                        >
                           {activeThread.authorAvatar ? (
                             <Image
                               source={{ uri: activeThread.authorAvatar }}
                               className="h-11 w-11"
                             />
                           ) : (
-                            <Text className="text-[14px] font-semibold text-sky-100">
+                            <Text className={`text-[14px] font-semibold ${isDark ? 'text-sky-100' : 'text-slate-800'}`}>
                               {buildInitials(activeThread.authorName)}
                             </Text>
                           )}
                         </View>
                         <View>
-                          <Text className="text-[15px] font-semibold text-sky-50">
+                          <Text className={`text-[15px] font-semibold ${isDark ? 'text-sky-50' : 'text-slate-900'}`}>
                             {activeThread.authorName}
                           </Text>
-                          <Text className="text-[11px] text-slate-400">
+                          <Text className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                             {activeThread.authorOrg || 'Community'}
                           </Text>
                         </View>
                       </View>
-                      <Text className="text-[11px] text-slate-500">
+                      <Text className={`text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>
                         {formatRelativeTime(activeThread.created_at)}
                       </Text>
                     </View>
 
-                    <Text className="mt-4 text-[16px] font-semibold text-sky-50">
+                    <Text className={`mt-4 text-[16px] font-semibold ${isDark ? 'text-sky-50' : 'text-slate-900'}`}>
                       {activeThread.title}
                     </Text>
-                    <Text className="mt-2 text-[13px] leading-5 text-slate-300">
+                    <Text className={`mt-2 text-[13px] leading-5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                       {activeThread.body}
                     </Text>
 
@@ -868,42 +896,52 @@ const CommunityForumScreen = ({ onNavigate }) => {
                       {(activeThread.categories || []).map((tag) => (
                         <View
                           key={tag.id}
-                          className="rounded-full border border-sky-800/50 bg-sky-900/30 px-3 py-1"
+                          className={`rounded-full border px-3 py-1 ${
+                            isDark ? 'border-sky-800/50 bg-sky-900/30' : 'border-sky-300 bg-sky-100'
+                          }`}
                         >
-                          <Text className="text-[11px] text-sky-200">#{tag.label}</Text>
+                          <Text className={`text-[11px] ${isDark ? 'text-sky-200' : 'text-sky-700'}`}>#{tag.label}</Text>
                         </View>
                       ))}
                     </View>
                   </View>
                 }
                 renderItem={({ item }) => (
-                  <View className="mt-4 rounded-[22px] border border-sky-900/70 bg-slate-950/60 p-4">
+                  <View
+                    className={`mt-4 rounded-[22px] border p-4 ${
+                      isDark ? 'border-sky-900/70 bg-slate-950/60' : 'border-slate-300 bg-white'
+                    }`}
+                  >
                     <View className="flex-row items-center justify-between">
                       <View className="flex-row items-center gap-3">
-                        <View className="h-10 w-10 items-center justify-center overflow-hidden rounded-2xl border border-sky-800/70 bg-slate-950/70">
+                        <View
+                          className={`h-10 w-10 items-center justify-center overflow-hidden rounded-2xl border ${
+                            isDark ? 'border-sky-800/70 bg-slate-950/70' : 'border-slate-300 bg-slate-100'
+                          }`}
+                        >
                           {item.authorAvatar ? (
                             <Image source={{ uri: item.authorAvatar }} className="h-10 w-10" />
                           ) : (
-                            <Text className="text-[13px] font-semibold text-sky-100">
+                            <Text className={`text-[13px] font-semibold ${isDark ? 'text-sky-100' : 'text-slate-800'}`}>
                               {buildInitials(item.authorName)}
                             </Text>
                           )}
                         </View>
                         <View>
-                          <Text className="text-[14px] font-semibold text-sky-50">
+                          <Text className={`text-[14px] font-semibold ${isDark ? 'text-sky-50' : 'text-slate-900'}`}>
                             {item.authorName}
                           </Text>
-                          <Text className="text-[11px] text-slate-400">
+                          <Text className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                             {item.authorOrg || 'Community'}
                           </Text>
                         </View>
                       </View>
-                      <Text className="text-[11px] text-slate-500">
+                      <Text className={`text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>
                         {formatRelativeTime(item.created_at)}
                       </Text>
                     </View>
 
-                    <Text className="mt-3 text-[13px] leading-5 text-slate-300">
+                    <Text className={`mt-3 text-[13px] leading-5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                       {item.body}
                     </Text>
 
@@ -917,12 +955,18 @@ const CommunityForumScreen = ({ onNavigate }) => {
                         >
                           <Text
                             className={`text-[12px] font-semibold ${
-                              item.userLiked ? 'text-rose-200' : 'text-rose-300'
+                              item.userLiked
+                                ? isDark
+                                  ? 'text-rose-200'
+                                  : 'text-rose-700'
+                                : isDark
+                                ? 'text-rose-300'
+                                : 'text-rose-600'
                             }`}
                           >
                             Like
                           </Text>
-                          <Text className="text-[12px] text-slate-300">{item.likeCount}</Text>
+                          <Text className={`text-[12px] ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{item.likeCount}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                           activeOpacity={0.8}
@@ -933,7 +977,7 @@ const CommunityForumScreen = ({ onNavigate }) => {
                         </TouchableOpacity>
                       </View>
                       {item.parent_post_id ? (
-                        <Text className="text-[11px] text-slate-500">Reply</Text>
+                        <Text className={`text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>Reply</Text>
                       ) : null}
                     </View>
                   </View>
@@ -944,22 +988,30 @@ const CommunityForumScreen = ({ onNavigate }) => {
                       <ActivityIndicator color="#5eead4" />
                     </View>
                   ) : (
-                    <View className="mt-4 rounded-2xl border border-sky-900/60 bg-slate-950/60 px-4 py-6">
-                      <Text className="text-[13px] text-slate-300">
+                    <View
+                      className={`mt-4 rounded-2xl border px-4 py-6 ${
+                        isDark ? 'border-sky-900/60 bg-slate-950/60' : 'border-slate-300 bg-white'
+                      }`}
+                    >
+                      <Text className={`text-[13px] ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                         No replies yet. Be the first to respond.
                       </Text>
                     </View>
                   )
                 }
                 ListFooterComponent={
-                  <View className="mt-6 rounded-2xl border border-sky-900/60 bg-slate-950/60 px-4 py-4">
+                  <View
+                    className={`mt-6 rounded-2xl border px-4 py-4 ${
+                      isDark ? 'border-sky-900/60 bg-slate-950/60' : 'border-slate-300 bg-white'
+                    }`}
+                  >
                     {replyTarget ? (
                       <View className="mb-3 flex-row items-center justify-between">
                         <Text className="text-[12px] text-sky-300">
                           Replying to {replyTarget.authorName}
                         </Text>
                         <TouchableOpacity onPress={() => setReplyTarget(null)}>
-                          <Text className="text-[12px] text-slate-400">Cancel</Text>
+                          <Text className={`text-[12px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Cancel</Text>
                         </TouchableOpacity>
                       </View>
                     ) : null}
@@ -967,12 +1019,12 @@ const CommunityForumScreen = ({ onNavigate }) => {
                       value={replyText}
                       onChangeText={setReplyText}
                       placeholder="Write a reply"
-                      placeholderTextColor="#94a3b8"
+                      placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
                       multiline
-                      className="min-h-[80px] text-[13px] text-slate-100"
+                      className={`min-h-[80px] text-[13px] ${isDark ? 'text-slate-100' : 'text-slate-800'}`}
                     />
                     {replyError ? (
-                      <Text className="mt-2 text-[12px] text-rose-200">{replyError}</Text>
+                      <Text className={`mt-2 text-[12px] ${isDark ? 'text-rose-200' : 'text-rose-700'}`}>{replyError}</Text>
                     ) : null}
                     <TouchableOpacity
                       activeOpacity={0.85}
@@ -1000,6 +1052,7 @@ const CommunityForumScreen = ({ onNavigate }) => {
 };
 
 const PostCard = ({ post, index, stats, onOpenThread }) => {
+  const { isDark } = useAppTheme();
   const fade = useRef(new Animated.Value(0)).current;
   const translate = useRef(new Animated.Value(16)).current;
 
@@ -1024,31 +1077,37 @@ const PostCard = ({ post, index, stats, onOpenThread }) => {
         opacity: fade,
         transform: [{ translateY: translate }],
       }}
-      className="mx-5 rounded-[28px] border border-sky-900/70 bg-slate-950/60 p-5"
+      className={`mx-5 rounded-[28px] border p-5 ${
+        isDark ? 'border-sky-900/70 bg-slate-950/60' : 'border-slate-300 bg-white'
+      }`}
     >
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-3">
-          <View className="h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-sky-800/70 bg-slate-950/70">
+          <View
+            className={`h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border ${
+              isDark ? 'border-sky-800/70 bg-slate-950/70' : 'border-slate-300 bg-slate-100'
+            }`}
+          >
             {post.authorAvatar ? (
               <Image source={{ uri: post.authorAvatar }} className="h-12 w-12" />
             ) : (
-              <Text className="text-[15px] font-semibold text-sky-100">
+              <Text className={`text-[15px] font-semibold ${isDark ? 'text-sky-100' : 'text-slate-800'}`}>
                 {buildInitials(post.authorName)}
               </Text>
             )}
           </View>
           <View>
-            <Text className="text-[15px] font-semibold text-sky-50">{post.authorName}</Text>
-            <Text className="text-[11px] text-slate-400">
+            <Text className={`text-[15px] font-semibold ${isDark ? 'text-sky-50' : 'text-slate-900'}`}>{post.authorName}</Text>
+            <Text className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               {post.authorOrg || 'Community'}
             </Text>
           </View>
         </View>
-        <Text className="text-[11px] text-slate-500">{formatRelativeTime(post.created_at)}</Text>
+        <Text className={`text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>{formatRelativeTime(post.created_at)}</Text>
       </View>
 
-      <Text className="mt-4 text-[16px] font-semibold text-sky-50">{post.title}</Text>
-      <Text className="mt-2 text-[13px] leading-5 text-slate-300">
+      <Text className={`mt-4 text-[16px] font-semibold ${isDark ? 'text-sky-50' : 'text-slate-900'}`}>{post.title}</Text>
+      <Text className={`mt-2 text-[13px] leading-5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
         {post.body?.length > 180 ? `${post.body.slice(0, 180)}...` : post.body}
       </Text>
 
@@ -1056,22 +1115,24 @@ const PostCard = ({ post, index, stats, onOpenThread }) => {
         {(post.categories || []).map((tag) => (
           <View
             key={tag.id}
-            className="rounded-full border border-sky-800/50 bg-sky-900/30 px-3 py-1"
+            className={`rounded-full border px-3 py-1 ${
+              isDark ? 'border-sky-800/50 bg-sky-900/30' : 'border-sky-300 bg-sky-100'
+            }`}
           >
-            <Text className="text-[11px] text-sky-200">#{tag.label}</Text>
+            <Text className={`text-[11px] ${isDark ? 'text-sky-200' : 'text-sky-700'}`}>#{tag.label}</Text>
           </View>
         ))}
       </View>
 
-      <View className="mt-5 flex-row items-center justify-between border-t border-sky-900/60 pt-4">
+      <View className={`mt-5 flex-row items-center justify-between border-t pt-4 ${isDark ? 'border-sky-900/60' : 'border-slate-200'}`}>
         <View className="flex-row items-center gap-4">
           <View className="flex-row items-center gap-1">
-            <Text className="text-[12px] font-semibold text-rose-300">Likes</Text>
-            <Text className="text-[12px] text-slate-300">{stats?.likes || 0}</Text>
+            <Text className={`text-[12px] font-semibold ${isDark ? 'text-rose-300' : 'text-rose-600'}`}>Likes</Text>
+            <Text className={`text-[12px] ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{stats?.likes || 0}</Text>
           </View>
           <View className="flex-row items-center gap-1">
             <Text className="text-[12px] font-semibold text-sky-300">Reply</Text>
-            <Text className="text-[12px] text-slate-300">{stats?.replies || 0}</Text>
+            <Text className={`text-[12px] ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{stats?.replies || 0}</Text>
           </View>
         </View>
         <TouchableOpacity activeOpacity={0.85} onPress={onOpenThread}>

@@ -13,6 +13,7 @@ import {
   Dimensions,
   ActivityIndicator,
 } from 'react-native';
+import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { Camera, CameraView } from 'expo-camera';
 import { Accelerometer } from 'expo-sensors';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -21,6 +22,7 @@ import PredictButton from '../components/PredictButton';
 import { uploadDataCardForOCR, validateFiducials, submitWaterSample } from '../utils/api';
 import { supabase } from '../utils/supabaseClient';
 import WaterResultScreen from './WaterResultScreen';
+import { useAppTheme } from '../utils/theme';
 
 const colorOptions = ['Clear', 'Slightly tinted', 'Yellow-brown', 'Greenish'];
 const sourceOptions = ['Surface water', 'Groundwater', 'Treated supply', 'Industrial effluent', 'Agricultural runoff'];
@@ -107,6 +109,26 @@ const getInitials = (value) => {
   const first = parts[0][0] || '';
   const last = parts.length > 1 ? parts[parts.length - 1][0] || '' : '';
   return `${first}${last}`.toUpperCase();
+};
+
+const formatElapsedLabel = (timestamp) => {
+  if (!timestamp) return 'timestamp unavailable';
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return 'timestamp unavailable';
+  const diffMs = Date.now() - date.getTime();
+  const minutes = Math.max(0, Math.floor(diffMs / 60000));
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+};
+
+const getGreetingLabel = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
 };
 
 const deriveAlignmentScore = ({ x = 0, y = 0, z = 0 }) => {
@@ -204,6 +226,7 @@ const preprocessImage = async (asset) => {
 };
 
 const DataInputScreen = ({ onNavigate }) => {
+  const { isDark } = useAppTheme();
   const [form, setForm] = useState({
     pH: '',
     hardness: '',
@@ -238,6 +261,10 @@ const DataInputScreen = ({ onNavigate }) => {
   const [submitError, setSubmitError] = useState('');
   const [profileName, setProfileName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [latestSampleLabel, setLatestSampleLabel] = useState('No sample yet');
+  const [latestSampleMeta, setLatestSampleMeta] = useState('Capture your first water card');
+  const [todaySamplesCount, setTodaySamplesCount] = useState(0);
+  const [totalSamplesCount, setTotalSamplesCount] = useState(0);
   // Fiducial detection state
   const [fiducialCount, setFiducialCount] = useState(0);
   const [fiducialQuality, setFiducialQuality] = useState(0);
@@ -357,6 +384,40 @@ const DataInputScreen = ({ onNavigate }) => {
         if (isMounted) {
           setProfileName(data?.display_name || user.email || '');
           setAvatarUrl(data?.avatar_url || '');
+        }
+
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const [latestResult, totalCountResult, todayCountResult] = await Promise.all([
+          supabase
+            .from(SUPABASE_SAMPLES_TABLE)
+            .select('id, created_at, sample_label, source')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+          supabase
+            .from(SUPABASE_SAMPLES_TABLE)
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id),
+          supabase
+            .from(SUPABASE_SAMPLES_TABLE)
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .gte('created_at', startOfDay.toISOString()),
+        ]);
+
+        const latest = latestResult?.data || null;
+        if (isMounted) {
+          setLatestSampleLabel(latest?.sample_label || latest?.source || 'No sample yet');
+          setLatestSampleMeta(
+            latest?.id
+              ? `ID #${String(latest.id).slice(0, 8)} · ${formatElapsedLabel(latest.created_at)}`
+              : 'Capture your first water card'
+          );
+          setTotalSamplesCount(totalCountResult?.count || 0);
+          setTodaySamplesCount(todayCountResult?.count || 0);
         }
       } catch (error) {
         console.warn('[Supabase] profile fetch error:', error?.message || error);
@@ -934,7 +995,7 @@ const DataInputScreen = ({ onNavigate }) => {
         onClose={handleCloseResult}
       />
       <KeyboardAvoidingView
-        className="flex-1 bg-aquadark"
+        className={`flex-1 ${isDark ? 'bg-aquadark' : 'bg-slate-100'}`}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
@@ -954,64 +1015,92 @@ const DataInputScreen = ({ onNavigate }) => {
                 },
               ],
             }}
-            className="rounded-[34px] border border-sky-900/70 bg-gradient-to-br from-slate-950/90 via-sky-950/30 to-emerald-900/20 px-5 pb-6 pt-7"
+            className={`rounded-[34px] border px-5 pb-6 pt-7 ${
+              isDark
+                ? 'border-sky-900/70 bg-gradient-to-br from-slate-950/90 via-sky-950/30 to-emerald-900/20'
+                : 'border-slate-300 bg-white'
+            }`}
           >
             <View className="flex-row items-center justify-between">
               <TouchableOpacity
                 activeOpacity={0.85}
-                className="rounded-full border border-sky-900/70 bg-slate-950/60 px-3 py-1.5"
+                className={`rounded-full border px-3 py-1.5 ${isDark ? 'border-sky-900/70 bg-slate-950/60' : 'border-slate-300 bg-slate-100'}`}
                 onPress={() => onNavigate && onNavigate('home')}
               >
-                <Text className="text-[12px] font-semibold text-sky-100">Dashboard</Text>
+                <View className="flex-row items-center gap-1.5">
+                  <Feather name="home" size={12} color={isDark ? '#e0f2fe' : '#1f2937'} />
+                  <Text className={`text-[12px] font-semibold ${isDark ? 'text-sky-100' : 'text-slate-800'}`}>Dashboard</Text>
+                </View>
               </TouchableOpacity>
               <View className="items-center gap-1">
-                <View className="h-16 w-16 overflow-hidden rounded-[22px] border border-sky-800/70 bg-slate-950/70">
+                <View className={`h-16 w-16 overflow-hidden rounded-[22px] border ${isDark ? 'border-sky-800/70 bg-slate-950/70' : 'border-slate-300 bg-slate-200'}`}>
                   {avatarUrl ? (
                     <Image source={{ uri: avatarUrl }} className="h-full w-full" resizeMode="cover" />
                   ) : (
                     <View className="h-full w-full items-center justify-center">
-                      <Text className="text-[18px] font-semibold text-sky-50">{getInitials(profileName)}</Text>
+                      <Text className={`text-[18px] font-semibold ${isDark ? 'text-sky-50' : 'text-slate-800'}`}>{getInitials(profileName)}</Text>
                     </View>
                   )}
                 </View>
-                <Text className="text-[13px] font-semibold text-sky-50">{profileName || 'Field operator'}</Text>
-                <Text className="text-[11px] text-slate-400">Field intelligence</Text>
+                <Text className={`text-[13px] font-semibold ${isDark ? 'text-sky-50' : 'text-slate-900'}`}>{profileName || 'Field operator'}</Text>
+                <Text className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Field intelligence</Text>
               </View>
-              <View className="rounded-2xl border border-emerald-500/50 bg-emerald-900/20 px-3 py-2">
-                <Text className="text-[11px] font-semibold uppercase tracking-wide text-emerald-200">
-                  Auto-sync ready
-                </Text>
+              <View
+                className={`rounded-2xl border px-3 py-2 ${
+                  isDark ? 'border-emerald-500/50 bg-emerald-900/20' : 'border-emerald-300 bg-emerald-100'
+                }`}
+              >
+                <View className="flex-row items-center gap-1.5">
+                  <MaterialCommunityIcons
+                    name="cloud-check-outline"
+                    size={12}
+                    color={isDark ? '#a7f3d0' : '#065f46'}
+                  />
+                  <Text
+                    className={`text-[11px] font-semibold uppercase tracking-wide ${
+                      isDark ? 'text-emerald-200' : 'text-emerald-800'
+                    }`}
+                  >
+                    Auto-sync ready
+                  </Text>
+                </View>
               </View>
             </View>
 
             <View className="mt-6">
-              <Text className="text-[11px] uppercase tracking-[3px] text-sky-400">
+              <Text className={`text-[11px] uppercase tracking-[3px] ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>
                 Field capture
               </Text>
-              <Text className="mt-2 text-[22px] font-semibold text-sky-50">
-                New water sample intake
+              <Text className={`mt-2 text-[22px] font-semibold ${isDark ? 'text-sky-50' : 'text-slate-900'}`}>
+                {getGreetingLabel()}, {profileName ? profileName.split(' ')[0] : 'operator'}
               </Text>
-              <Text className="mt-2 text-[13px] text-slate-400">
+              <Text className={`mt-2 text-[13px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                 Manual + OCR capture for downstream risk scoring and model retraining.
               </Text>
             </View>
 
             <View className="mt-5 flex-row gap-3">
-              <View className="flex-1 rounded-3xl border border-slate-800/70 bg-slate-950/70 p-4">
-                <Text className="text-[11px] uppercase tracking-wide text-slate-400">
-                  Last sample
+              <View className={`flex-1 rounded-3xl border p-4 ${isDark ? 'border-slate-800/70 bg-slate-950/70' : 'border-slate-300 bg-slate-50'}`}>
+                <View className="flex-row items-center gap-1.5">
+                  <MaterialCommunityIcons name="water-outline" size={12} color={isDark ? '#94a3b8' : '#64748b'} />
+                  <Text className={`text-[11px] uppercase tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    Last sample
+                  </Text>
+                </View>
+                <Text className={`mt-2 text-[18px] font-semibold ${isDark ? 'text-sky-50' : 'text-slate-900'}`}>
+                  {latestSampleLabel}
                 </Text>
-                <Text className="mt-2 text-[18px] font-semibold text-sky-50">
-                  Lake Biwa intake
-                </Text>
-                <Text className="text-[12px] text-slate-400">ID #AQ-024 at 09:41</Text>
+                <Text className={`text-[12px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{latestSampleMeta}</Text>
               </View>
-              <View className="flex-1 rounded-3xl border border-slate-800/70 bg-slate-950/70 p-4">
-                <Text className="text-[11px] uppercase tracking-wide text-slate-400">
-                  Queue
-                </Text>
-                <Text className="mt-2 text-[18px] font-semibold text-sky-50">02 cards</Text>
-                <Text className="text-[12px] text-slate-400">Awaiting OCR review</Text>
+              <View className={`flex-1 rounded-3xl border p-4 ${isDark ? 'border-slate-800/70 bg-slate-950/70' : 'border-slate-300 bg-slate-50'}`}>
+                <View className="flex-row items-center gap-1.5">
+                  <Feather name="bar-chart-2" size={12} color={isDark ? '#94a3b8' : '#64748b'} />
+                  <Text className={`text-[11px] uppercase tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    Samples today
+                  </Text>
+                </View>
+                <Text className={`mt-2 text-[18px] font-semibold ${isDark ? 'text-sky-50' : 'text-slate-900'}`}>{todaySamplesCount}</Text>
+                <Text className={`text-[12px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Total saved {totalSamplesCount}</Text>
               </View>
             </View>
           </Animated.View>
@@ -1028,19 +1117,21 @@ const DataInputScreen = ({ onNavigate }) => {
                 },
               ],
             }}
-            className="rounded-[34px] border border-sky-900/80 bg-slate-950/70 p-5"
+            className={`rounded-[34px] p-5 ${
+              isDark ? 'border border-sky-900/80 bg-slate-950/70' : 'border border-slate-300 bg-white'
+            }`}
           >
             <View className="flex-row items-start justify-between gap-4">
               <View className="flex-1">
-                <Text className="text-[11px] font-semibold uppercase tracking-wide text-sky-300">
+                <Text className={`text-[11px] font-semibold uppercase tracking-wide ${isDark ? 'text-sky-300' : 'text-sky-600'}`}>
                   Image-assisted capture
                 </Text>
-                <Text className="mt-2 text-[13px] text-slate-300">
+                <Text className={`mt-2 text-[13px] ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                   Snap the standardized sheet; EasyOCR fills all 10 water-quality fields instantly when legible.
                 </Text>
               </View>
-              <View className="rounded-2xl border border-sky-900/60 bg-slate-900/60 px-3 py-2">
-                <Text className="text-[11px] font-semibold text-sky-200">
+              <View className={`rounded-2xl border px-3 py-2 ${isDark ? 'border-sky-900/60 bg-slate-900/60' : 'border-slate-300 bg-slate-100'}`}>
+                <Text className={`text-[11px] font-semibold ${isDark ? 'text-sky-200' : 'text-sky-600'}`}>
                   {capturePreview ? 'Retake ready' : 'Camera idle'}
                 </Text>
               </View>
@@ -1054,10 +1145,10 @@ const DataInputScreen = ({ onNavigate }) => {
                 <Text className="mt-2 text-[11px] text-rose-400">{cameraError}</Text>
               ) : null}
               {preprocessing ? (
-                <Text className="mt-2 text-[11px] text-slate-300">Optimizing capture for OCR...</Text>
+                <Text className={`mt-2 text-[11px] ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Optimizing capture for OCR...</Text>
               ) : null}
               {preprocessNotes && !preprocessing ? (
-                <Text className="mt-2 text-[11px] text-slate-400">{preprocessNotes}</Text>
+                <Text className={`mt-2 text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{preprocessNotes}</Text>
               ) : null}
               {ocrLoading ? (
                 <View className="mt-3 flex-row items-center">
@@ -1065,13 +1156,13 @@ const DataInputScreen = ({ onNavigate }) => {
                     className="h-3.5 w-3.5 rounded-full border-2 border-sky-300 border-t-transparent"
                     style={{ transform: [{ rotate: spinnerRotation }] }}
                   />
-                  <Text className="ml-2 text-[11px] text-emerald-300">
+                  <Text className={`ml-2 text-[11px] ${isDark ? 'text-emerald-300' : 'text-emerald-600'}`}>
                     Extracting values with EasyOCR...
                   </Text>
                 </View>
               ) : null}
               {ocrApplied && !ocrLoading ? (
-                <Text className="mt-2 text-[11px] text-emerald-300">
+                <Text className={`mt-2 text-[11px] ${isDark ? 'text-emerald-300' : 'text-emerald-600'}`}>
                   Fields updated automatically. Review before saving.
                 </Text>
               ) : null}
@@ -1081,7 +1172,7 @@ const DataInputScreen = ({ onNavigate }) => {
             </View>
             {capturePreview ? (
               <View className="mt-5 flex-row gap-3">
-                <View className="h-24 w-20 overflow-hidden rounded-2xl border border-sky-900/80 bg-slate-900">
+                <View className={`h-24 w-20 overflow-hidden rounded-2xl border ${isDark ? 'border-sky-900/80 bg-slate-900' : 'border-slate-300 bg-slate-100'}`}>
                   <Image
                     source={{ uri: capturePreview.uri }}
                     className="h-full w-full"
@@ -1089,8 +1180,8 @@ const DataInputScreen = ({ onNavigate }) => {
                   />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-[13px] font-semibold text-sky-100">OCR preview</Text>
-                  <Text className="mt-1 text-[12px] text-slate-400">
+                  <Text className={`text-[13px] font-semibold ${isDark ? 'text-sky-100' : 'text-slate-800'}`}>OCR preview</Text>
+                  <Text className={`mt-1 text-[12px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                     Preview for alignment only. Backend OCR uses the raw capture for numeric extraction.
                   </Text>
                 </View>
@@ -1112,8 +1203,8 @@ const DataInputScreen = ({ onNavigate }) => {
             }}
             className="gap-5"
           >
-            <View className="rounded-[32px] border border-sky-900/70 bg-slate-950/80 p-5">
-              <Text className="text-[11px] font-semibold uppercase tracking-wide text-sky-300">
+            <View className={`rounded-[32px] p-5 ${isDark ? 'border border-sky-900/70 bg-slate-950/80' : 'border border-slate-300 bg-white'}`}>
+              <Text className={`text-[11px] font-semibold uppercase tracking-wide ${isDark ? 'text-sky-300' : 'text-sky-600'}`}>
                 Core parameters
               </Text>
               <View className="mt-4 flex-row gap-3">
@@ -1158,8 +1249,8 @@ const DataInputScreen = ({ onNavigate }) => {
               </View>
             </View>
 
-            <View className="rounded-[32px] border border-sky-900/70 bg-slate-950/80 p-5">
-              <Text className="text-[11px] font-semibold uppercase tracking-wide text-sky-300">
+            <View className={`rounded-[32px] p-5 ${isDark ? 'border border-sky-900/70 bg-slate-950/80' : 'border border-slate-300 bg-white'}`}>
+              <Text className={`text-[11px] font-semibold uppercase tracking-wide ${isDark ? 'text-sky-300' : 'text-sky-600'}`}>
                 Chemical compounds
               </Text>
               <View className="mt-4 flex-row gap-3">
@@ -1204,8 +1295,8 @@ const DataInputScreen = ({ onNavigate }) => {
               </View>
             </View>
 
-            <View className="rounded-[32px] border border-sky-900/70 bg-slate-950/80 p-5">
-              <Text className="text-[11px] font-semibold uppercase tracking-wide text-sky-300">
+            <View className={`rounded-[32px] p-5 ${isDark ? 'border border-sky-900/70 bg-slate-950/80' : 'border border-slate-300 bg-white'}`}>
+              <Text className={`text-[11px] font-semibold uppercase tracking-wide ${isDark ? 'text-sky-300' : 'text-sky-600'}`}>
                 Physical & disinfectant
               </Text>
               <View className="mt-4 flex-row gap-3">
@@ -1230,12 +1321,12 @@ const DataInputScreen = ({ onNavigate }) => {
               </View>
             </View>
 
-            <View className="rounded-[32px] border border-sky-900/80 bg-slate-950/80 p-5">
-              <Text className="text-[11px] font-semibold uppercase tracking-wide text-sky-300">
+            <View className={`rounded-[32px] p-5 ${isDark ? 'border border-sky-900/80 bg-slate-950/80' : 'border border-slate-300 bg-white'}`}>
+              <Text className={`text-[11px] font-semibold uppercase tracking-wide ${isDark ? 'text-sky-300' : 'text-sky-600'}`}>
                 Visual & context
               </Text>
               <View className="mt-4">
-                <Text className="mb-2 text-[13px] font-semibold text-sky-100">Color</Text>
+                <Text className={`mb-2 text-[13px] font-semibold ${isDark ? 'text-sky-100' : 'text-slate-800'}`}>Color</Text>
                 <View className="flex-row flex-wrap gap-2">
                   {colorOptions.map((option) => {
                     const selected = form.color === option;
@@ -1246,13 +1337,15 @@ const DataInputScreen = ({ onNavigate }) => {
                         className={`rounded-full border px-3 py-1.5 ${
                           selected
                             ? 'border-aquaaccent bg-aquaaccent/15'
-                            : 'border-slate-800 bg-slate-950'
+                            : isDark
+                            ? 'border-slate-800 bg-slate-950'
+                            : 'border-slate-300 bg-slate-50'
                         }`}
                         onPress={() => updateField('color', option)}
                       >
                         <Text
                           className={`text-[12px] ${
-                            selected ? 'text-aquaaccent' : 'text-slate-300'
+                            selected ? 'text-aquaaccent' : isDark ? 'text-slate-300' : 'text-slate-700'
                           }`}
                         >
                           {option}
@@ -1263,7 +1356,7 @@ const DataInputScreen = ({ onNavigate }) => {
                 </View>
               </View>
               <View className="mt-5">
-                <Text className="mb-2 text-[13px] font-semibold text-sky-100">
+                <Text className={`mb-2 text-[13px] font-semibold ${isDark ? 'text-sky-100' : 'text-slate-800'}`}>
                   Source (sampling context)
                 </Text>
                 <View className="flex-row flex-wrap gap-2">
@@ -1276,13 +1369,15 @@ const DataInputScreen = ({ onNavigate }) => {
                         className={`rounded-full border px-3 py-1.5 ${
                           selected
                             ? 'border-emerald-400 bg-emerald-500/20'
-                            : 'border-slate-800 bg-slate-950'
+                            : isDark
+                            ? 'border-slate-800 bg-slate-950'
+                            : 'border-slate-300 bg-slate-50'
                         }`}
                         onPress={() => updateField('source', option)}
                       >
                         <Text
                           className={`text-[12px] ${
-                            selected ? 'text-emerald-50' : 'text-slate-300'
+                            selected ? (isDark ? 'text-emerald-50' : 'text-emerald-700') : isDark ? 'text-slate-300' : 'text-slate-700'
                           }`}
                         >
                           {option}
@@ -1295,8 +1390,8 @@ const DataInputScreen = ({ onNavigate }) => {
             </View>
           </Animated.View>
 
-          <View className="rounded-[32px] border border-sky-900/70 bg-slate-950/80 p-5">
-            <Text className="text-[12px] text-slate-400">
+          <View className={`rounded-[32px] p-5 ${isDark ? 'border border-sky-900/70 bg-slate-950/80' : 'border border-slate-300 bg-white'}`}>
+            <Text className={`text-[12px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               Finalize and sync this sample to kick off anomaly detection, historical comparisons, and model retraining cues.
             </Text>
             <PredictButton
@@ -1308,13 +1403,15 @@ const DataInputScreen = ({ onNavigate }) => {
             {submitLoading ? (
               <View className="mt-3 flex-row items-center justify-center gap-2">
                 <ActivityIndicator color="#34d399" size="small" />
-                <Text className="text-[12px] text-emerald-200">
+                <Text className={`text-[12px] ${isDark ? 'text-emerald-200' : 'text-emerald-700'}`}>
                   Syncing and running model checks…
                 </Text>
               </View>
             ) : null}
             {submitError ? (
-              <Text className="mt-3 text-center text-[12px] text-rose-300">{submitError}</Text>
+              <Text className={`mt-3 text-center text-[12px] ${isDark ? 'text-rose-300' : 'text-rose-600'}`}>
+                {submitError}
+              </Text>
             ) : null}
             <Text className="mt-2 text-center text-[11px] text-slate-500">
               Values feed into image-assisted models for early disease detection.

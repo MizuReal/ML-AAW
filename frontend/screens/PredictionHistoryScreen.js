@@ -11,6 +11,7 @@ import {
 import { supabase } from '../utils/supabaseClient';
 import { assessMicrobialRisk } from '../utils/api';
 import WaterResultScreen from './WaterResultScreen';
+import { useAppTheme } from '../utils/theme';
 
 const SUPABASE_SAMPLES_TABLE = process.env.EXPO_PUBLIC_SUPABASE_SAMPLES_TABLE || 'field_samples';
 const DEFAULT_DECISION_THRESHOLD = 0.58;
@@ -42,16 +43,30 @@ const CONTAINER_HISTORY = [
   },
 ];
 
-const STATUS_STYLES = {
-  Cleared: 'border-emerald-500/60 bg-emerald-500/15',
-  Review: 'border-amber-500/60 bg-amber-500/10',
-  Alert: 'border-rose-500/60 bg-rose-500/10',
+const getStatusStyleClass = (status, isDark) => {
+  if (status === 'Cleared') {
+    return isDark ? 'border-emerald-500/60 bg-emerald-500/15' : 'border-emerald-300 bg-emerald-100';
+  }
+  if (status === 'Review') {
+    return isDark ? 'border-amber-500/60 bg-amber-500/10' : 'border-amber-300 bg-amber-100';
+  }
+  if (status === 'Alert') {
+    return isDark ? 'border-rose-500/60 bg-rose-500/10' : 'border-rose-300 bg-rose-100';
+  }
+  return isDark ? 'border-sky-700 bg-sky-900/40' : 'border-slate-300 bg-slate-100';
 };
 
-const STATUS_TEXT_CLASSES = {
-  Cleared: 'text-sky-50',
-  Review: 'text-amber-200',
-  Alert: 'text-rose-200',
+const getStatusTextClass = (status, isDark) => {
+  if (status === 'Cleared') {
+    return isDark ? 'text-emerald-100' : 'text-emerald-800';
+  }
+  if (status === 'Review') {
+    return isDark ? 'text-amber-200' : 'text-amber-800';
+  }
+  if (status === 'Alert') {
+    return isDark ? 'text-rose-200' : 'text-rose-800';
+  }
+  return isDark ? 'text-sky-100' : 'text-slate-800';
 };
 
 const formatTimestamp = (timestamp) => {
@@ -117,6 +132,7 @@ const buildResultFromRow = (row) => ({
 });
 
 const PredictionHistoryScreen = ({ onNavigate }) => {
+  const { isDark } = useAppTheme();
   const [activeTab, setActiveTab] = useState('data'); // 'data' | 'container'
   const [selectedId, setSelectedId] = useState(null);
   const [dataHistory, setDataHistory] = useState([]);
@@ -207,25 +223,25 @@ const PredictionHistoryScreen = ({ onNavigate }) => {
   const items = activeTab === 'data' ? dataHistory : CONTAINER_HISTORY;
 
   const renderCard = (item) => {
-    const statusClass = STATUS_STYLES[item.status] || 'border-sky-700 bg-sky-900/40';
-    const statusTextClass = STATUS_TEXT_CLASSES[item.status] || 'text-sky-100';
+    const statusClass = getStatusStyleClass(item.status, isDark);
+    const statusTextClass = getStatusTextClass(item.status, isDark);
     const isSelected = activeTab === 'container' && selectedId === item.id;
     const canShowDetails = activeTab === 'data';
 
     return (
       <View
         key={item.id}
-        className="mb-3 rounded-2xl border border-sky-900/80 bg-aquadark/80 p-4"
+        className={`mb-3 rounded-2xl border p-4 ${isDark ? 'border-sky-900/80 bg-aquadark/80' : 'border-slate-300 bg-white'}`}
       >
         <View className="flex-row items-start justify-between">
           <View className="flex-1 pr-3">
-            <Text className="text-[11px] font-medium uppercase tracking-wide text-sky-300">
+            <Text className={`text-[11px] font-medium uppercase tracking-wide ${isDark ? 'text-sky-300' : 'text-sky-600'}`}>
               {activeTab === 'data' ? 'Sample' : 'Container'}
             </Text>
-            <Text className="mt-1 text-[13px] font-semibold text-sky-50">
+            <Text className={`mt-1 text-[13px] font-semibold ${isDark ? 'text-sky-50' : 'text-slate-900'}`}>
               {item.location}
             </Text>
-            <Text className="mt-0.5 text-[11px] text-slate-400">{item.id} • {item.timestamp}</Text>
+            <Text className={`mt-0.5 text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{item.id} • {item.timestamp}</Text>
           </View>
           <View
             className={`rounded-full border px-3 py-1 ${statusClass}`}
@@ -238,18 +254,18 @@ const PredictionHistoryScreen = ({ onNavigate }) => {
 
         <View className="mt-3 flex-row items-center justify-between">
           <View className="flex-1 pr-4">
-            <Text className="text-[11px] font-medium uppercase tracking-wide text-sky-300">
+            <Text className={`text-[11px] font-medium uppercase tracking-wide ${isDark ? 'text-sky-300' : 'text-sky-600'}`}>
               Predicted class
             </Text>
-            <Text className="mt-1 text-[13px] text-sky-50">
+            <Text className={`mt-1 text-[13px] ${isDark ? 'text-sky-50' : 'text-slate-900'}`}>
               {item.predictedClass}
             </Text>
           </View>
           <View className="items-end">
-            <Text className="text-[11px] font-medium uppercase tracking-wide text-sky-300">
+            <Text className={`text-[11px] font-medium uppercase tracking-wide ${isDark ? 'text-sky-300' : 'text-sky-600'}`}>
               Confidence
             </Text>
-            <Text className="mt-1 text-[13px] font-semibold text-sky-50">
+            <Text className={`mt-1 text-[13px] font-semibold ${isDark ? 'text-sky-50' : 'text-slate-900'}`}>
               {(item.confidence * 100).toFixed(0)}%
             </Text>
           </View>
@@ -314,18 +330,18 @@ const PredictionHistoryScreen = ({ onNavigate }) => {
             }}
             className="rounded-full border border-aquaprimary/70 bg-aquaprimary/10 px-3 py-1"
           >
-            <Text className="text-[11px] font-medium text-sky-50">
+            <Text className={`text-[11px] font-medium ${isDark ? 'text-sky-50' : 'text-slate-800'}`}>
               {isSelected ? 'Hide details' : 'View details'}
             </Text>
           </TouchableOpacity>
         </View>
 
         {isSelected && (
-          <View className="mt-3 rounded-xl border border-sky-900/70 bg-sky-950/60 p-3">
-            <Text className="text-[11px] font-medium uppercase tracking-wide text-sky-300">
+          <View className={`mt-3 rounded-xl border p-3 ${isDark ? 'border-sky-900/70 bg-sky-950/60' : 'border-slate-300 bg-sky-50'}`}>
+            <Text className={`text-[11px] font-medium uppercase tracking-wide ${isDark ? 'text-sky-300' : 'text-sky-600'}`}>
               Details
             </Text>
-            <Text className="mt-1 text-[12px] text-slate-300">
+            <Text className={`mt-1 text-[12px] ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
               This is a compact summary of the run. Integrate this
               card later with backend metadata (raw physicochemical
               values, analyst notes, and linked image batches).
@@ -338,7 +354,7 @@ const PredictionHistoryScreen = ({ onNavigate }) => {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-aquadark"
+      className={`flex-1 ${isDark ? 'bg-aquadark' : 'bg-slate-100'}`}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <WaterResultScreen
@@ -364,24 +380,24 @@ const PredictionHistoryScreen = ({ onNavigate }) => {
         <View className="mb-2 flex-row items-center justify-between">
           <TouchableOpacity
             activeOpacity={0.8}
-            className="rounded-full border border-sky-900/70 bg-aquadark/80 px-3 py-1.5"
+            className={`rounded-full border px-3 py-1.5 ${isDark ? 'border-sky-900/70 bg-aquadark/80' : 'border-slate-300 bg-slate-100'}`}
             onPress={() => onNavigate && onNavigate('home')}
           >
-            <Text className="text-[12px] font-medium text-sky-100">⟵ Dashboard</Text>
+            <Text className={`text-[12px] font-medium ${isDark ? 'text-sky-100' : 'text-slate-800'}`}>⟵ Dashboard</Text>
           </TouchableOpacity>
-          <View className="rounded-full border border-slate-800/70 bg-slate-950/70 px-3 py-1">
-            <Text className="text-[11px] font-semibold uppercase tracking-wide text-slate-300">
+          <View className={`rounded-full border px-3 py-1 ${isDark ? 'border-slate-800/70 bg-slate-950/70' : 'border-slate-300 bg-slate-100'}`}>
+            <Text className={`text-[11px] font-semibold uppercase tracking-wide ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
               Ops Live
             </Text>
           </View>
         </View>
-        <Text className="text-[22px] font-bold text-sky-100">Predictions history</Text>
-        <Text className="mt-1 text-[13px] text-slate-400">
+        <Text className={`text-[22px] font-bold ${isDark ? 'text-sky-100' : 'text-slate-800'}`}>Predictions history</Text>
+        <Text className={`mt-1 text-[13px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
           Review recent model runs across physicochemical samples and
           container images.
         </Text>
 
-        <View className="mt-4 rounded-full bg-slate-950/70 p-1 flex-row">
+        <View className={`mt-4 rounded-full p-1 flex-row ${isDark ? 'bg-slate-950/70' : 'bg-slate-200'}`}>
           <TouchableOpacity
             activeOpacity={0.9}
             className={`flex-1 rounded-full px-3 py-1.5 ${
@@ -391,7 +407,7 @@ const PredictionHistoryScreen = ({ onNavigate }) => {
           >
             <Text
               className={`text-center text-[12px] font-medium ${
-                activeTab === 'data' ? 'text-sky-50' : 'text-slate-400'
+                activeTab === 'data' ? (isDark ? 'text-sky-50' : 'text-slate-900') : (isDark ? 'text-slate-400' : 'text-slate-600')
               }`}
             >
               Data history
@@ -406,7 +422,7 @@ const PredictionHistoryScreen = ({ onNavigate }) => {
           >
             <Text
               className={`text-center text-[12px] font-medium ${
-                activeTab === 'container' ? 'text-sky-50' : 'text-slate-400'
+                activeTab === 'container' ? (isDark ? 'text-sky-50' : 'text-slate-900') : (isDark ? 'text-slate-400' : 'text-slate-600')
               }`}
             >
               Container history
@@ -420,11 +436,11 @@ const PredictionHistoryScreen = ({ onNavigate }) => {
         contentContainerClassName="pb-10 pt-1"
         showsVerticalScrollIndicator={false}
       >
-        <View className="mt-1 rounded-2xl border border-sky-900/70 bg-sky-950/40 p-4">
-          <Text className="text-[11px] font-medium uppercase tracking-wide text-sky-300">
+        <View className={`mt-1 rounded-2xl border p-4 ${isDark ? 'border-sky-900/70 bg-sky-950/40' : 'border-slate-300 bg-sky-50'}`}>
+          <Text className={`text-[11px] font-medium uppercase tracking-wide ${isDark ? 'text-sky-300' : 'text-sky-600'}`}>
             {activeTab === 'data' ? 'Data predictions' : 'Container predictions'}
           </Text>
-          <Text className="mt-1 text-[12px] text-slate-400">
+          <Text className={`mt-1 text-[12px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
             Each entry shows timestamp, sample or location, predicted
             class, confidence, status, and a quick details toggle.
           </Text>
@@ -432,13 +448,13 @@ const PredictionHistoryScreen = ({ onNavigate }) => {
 
         <View className="mt-3">
           {activeTab === 'data' && loading ? (
-            <View className="rounded-2xl border border-sky-900/70 bg-sky-950/40 p-4">
-              <Text className="text-[12px] text-slate-400">Loading recent samples...</Text>
+            <View className={`rounded-2xl border p-4 ${isDark ? 'border-sky-900/70 bg-sky-950/40' : 'border-slate-300 bg-slate-50'}`}>
+              <Text className={`text-[12px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Loading recent samples...</Text>
             </View>
           ) : null}
           {activeTab === 'data' && !loading && items.length === 0 ? (
-            <View className="rounded-2xl border border-sky-900/70 bg-sky-950/40 p-4">
-              <Text className="text-[12px] text-slate-400">
+            <View className={`rounded-2xl border p-4 ${isDark ? 'border-sky-900/70 bg-sky-950/40' : 'border-slate-300 bg-slate-50'}`}>
+              <Text className={`text-[12px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                 No saved samples yet. Run a new check to populate history.
               </Text>
             </View>

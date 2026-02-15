@@ -12,23 +12,25 @@ import ProfileScreen from './screens/ProfileScreen';
 import CommunityForumScreen from './screens/CommunityForumScreen';
 import { supabase } from './utils/supabaseClient';
 import MenuButton from './components/MenuButton';
+import { ThemeProvider, useAppTheme } from './utils/theme';
 
-const MENU_ITEMS = [
-  { label: '📥 Data input', route: 'dataInput' },
-  { label: '🧪 Container Analysis', route: 'containerAnalysis' },
-  { label: '📊 Predictions History', route: 'predictionHistory' },
-  { label: '💬 Community Forum', route: 'community' },
-  { label: '📈 Analytics', route: 'analysis' },
-  { label: '⚙️ Settings', route: null },
-  { label: '👤 Profile', route: 'profile' },
-  { label: '🚪 Logout', route: 'logout' },
-];
-
-export default function App() {
+function AppContent() {
+  const { isDark, toggleTheme } = useAppTheme();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeScreen, setActiveScreen] = useState('home'); // 'home' | 'dataInput' | 'containerAnalysis' | 'predictionHistory' | 'analysis' | 'profile' | 'community'
   const [menuOpen, setMenuOpen] = useState(false);
   const menuAnim = useRef(new Animated.Value(0)).current;
+
+  const menuItems = [
+    { label: '📥 Data input', route: 'dataInput' },
+    { label: '🧪 Container Analysis', route: 'containerAnalysis' },
+    { label: '📊 Predictions History', route: 'predictionHistory' },
+    { label: '💬 Community Forum', route: 'community' },
+    { label: '📈 Analytics', route: 'analysis' },
+    { label: isDark ? '☀️ Light mode' : '🌙 Dark mode', route: 'toggleTheme' },
+    { label: '👤 Profile', route: 'profile' },
+    { label: '🚪 Logout', route: 'logout' },
+  ];
 
   useEffect(() => {
     Animated.timing(menuAnim, {
@@ -119,7 +121,7 @@ export default function App() {
   }
 
   return (
-    <View className="flex-1 bg-aquadark">
+    <View className={`flex-1 ${isDark ? 'bg-aquadark' : 'bg-slate-100'}`}>
       {content}
       {isAuthenticated && (
         <>
@@ -146,29 +148,49 @@ export default function App() {
               activeOpacity={1}
               onPress={() => setMenuOpen(false)}
             />
-            <View className="absolute right-5 top-24 w-56 rounded-2xl border border-sky-900/80 bg-slate-950/95 p-2 shadow-xl shadow-sky-900/60">
-              {MENU_ITEMS.map((item, index) => (
+            <View
+              className={`absolute right-5 top-24 w-56 rounded-2xl p-2 shadow-xl ${
+                isDark
+                  ? 'border border-sky-900/80 bg-slate-950/95 shadow-sky-900/60'
+                  : 'border border-slate-300 bg-white shadow-slate-300/60'
+              }`}
+            >
+              {menuItems.map((item, index) => (
                 <TouchableOpacity
                   key={item.label}
                   activeOpacity={0.9}
-                  className={`rounded-xl px-3 py-2 ${index === 0 ? 'bg-sky-900/40' : 'bg-transparent'}`}
+                  className={`rounded-xl px-3 py-2 ${
+                    index === 0 ? (isDark ? 'bg-sky-900/40' : 'bg-sky-100') : 'bg-transparent'
+                  }`}
                   onPress={() => {
                     setMenuOpen(false);
                     if (item.route === 'logout') {
                       handleLogout();
+                    } else if (item.route === 'toggleTheme') {
+                      toggleTheme();
                     } else if (item.route) {
                       handleNavigate(item.route);
                     }
                   }}
                 >
-                  <Text className="text-[13px] text-sky-100">{item.label}</Text>
+                  <Text className={`text-[13px] ${isDark ? 'text-sky-100' : 'text-slate-800'}`}>
+                    {item.label}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
           </Animated.View>
         </>
       )}
-      <StatusBar style="light" />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
     </View>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }

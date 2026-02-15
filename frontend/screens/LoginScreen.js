@@ -4,8 +4,10 @@ import LottieView from 'lottie-react-native';
 import InputField from '../components/InputField';
 import PredictButton from '../components/PredictButton';
 import { supabase } from '../utils/supabaseClient';
+import { useAppTheme } from '../utils/theme';
 
 const LoginScreen = ({ onLoginSuccess }) => {
+  const { isDark } = useAppTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -183,7 +185,7 @@ const LoginScreen = ({ onLoginSuccess }) => {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-aquadark"
+      className={`flex-1 ${isDark ? 'bg-aquadark' : 'bg-slate-100'}`}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
@@ -207,7 +209,7 @@ const LoginScreen = ({ onLoginSuccess }) => {
           className="rounded-[36px] border border-sky-900/70 bg-gradient-to-br from-slate-950/90 via-sky-950/30 to-emerald-900/20 px-6 pt-8 pb-6 shadow-2xl shadow-sky-900/50"
         >
           <View className="items-center">
-            <View className="h-28 w-28 items-center justify-center rounded-full border border-sky-800/70 bg-slate-950/60">
+            <View className={`h-28 w-28 items-center justify-center rounded-full border ${isDark ? 'border-sky-800/70 bg-slate-950/60' : 'border-slate-300 bg-slate-100'}`}>
               <LottieView
                 source={require('../assets/public/AI.json')}
                 autoPlay
@@ -215,10 +217,10 @@ const LoginScreen = ({ onLoginSuccess }) => {
                 style={{ width: 120, height: 120 }}
               />
             </View>
-            <Text className="mt-4 px-4 text-center text-[15px] font-semibold text-sky-50">
+            <Text className={`mt-4 px-4 text-center text-[15px] font-semibold ${isDark ? 'text-sky-50' : 'text-slate-900'}`}>
               Edge intelligence for water labs
             </Text>
-            <Text className="mt-2 px-3 text-center text-[13px] text-slate-300">
+            <Text className={`mt-2 px-3 text-center text-[13px] ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
               AI driven physicochemical capture, forecasting, and disease-risk prediction.
             </Text>
           </View>
@@ -236,7 +238,11 @@ const LoginScreen = ({ onLoginSuccess }) => {
               },
             ],
           }}
-          className="rounded-[32px] border border-sky-900/80 bg-slate-950/80 p-6 shadow-xl shadow-sky-900/40"
+          className={`rounded-[32px] p-6 shadow-xl ${
+            isDark
+              ? 'border border-sky-900/80 bg-slate-950/80 shadow-sky-900/40'
+              : 'border border-slate-300 bg-white shadow-slate-300/40'
+          }`}
         >
           <View className="items-center">
             <Animated.View
@@ -252,10 +258,10 @@ const LoginScreen = ({ onLoginSuccess }) => {
                 ],
               }}
             >
-              <Text className="text-base font-semibold text-sky-100 text-center">
+              <Text className={`text-base font-semibold text-center ${isDark ? 'text-sky-100' : 'text-slate-800'}`}>
                 Sign in to continue
               </Text>
-              <Text className="mt-1 text-[13px] text-sky-200/80 text-center">
+              <Text className={`mt-1 text-[13px] text-center ${isDark ? 'text-sky-200/80' : 'text-slate-500'}`}>
                 Monitor samples and trigger AI assisted diagnostics.
               </Text>
             </Animated.View>
@@ -274,16 +280,16 @@ const LoginScreen = ({ onLoginSuccess }) => {
                 ],
               }}
             >
-              <Text className="text-base font-semibold text-sky-100 text-center">
+              <Text className={`text-base font-semibold text-center ${isDark ? 'text-sky-100' : 'text-slate-800'}`}>
                 Create an account
               </Text>
-              <Text className="mt-1 text-[13px] text-sky-200/80 text-center">
+              <Text className={`mt-1 text-[13px] text-center ${isDark ? 'text-sky-200/80' : 'text-slate-500'}`}>
                 Secure access to capture cards and review predictions.
               </Text>
             </Animated.View>
           </View>
 
-          <View className="mt-6 mb-4 flex-row rounded-full bg-slate-900/70 px-1 py-1">
+          <View className={`mt-6 mb-4 flex-row rounded-full px-1 py-1 ${isDark ? 'bg-slate-900/70' : 'bg-slate-200'}`}>
             <TouchableOpacity
               className={`flex-1 items-center rounded-full py-1.5 ${
                 mode === 'login' ? 'bg-sky-900/60' : 'bg-transparent'
@@ -292,7 +298,7 @@ const LoginScreen = ({ onLoginSuccess }) => {
               onPress={() => switchMode('login')}
             >
               <Animated.Text
-                className="text-[13px] font-semibold text-sky-100"
+                className={`text-[13px] font-semibold ${isDark ? 'text-sky-100' : 'text-slate-800'}`}
                 style={{
                   opacity: modeAnim.interpolate({
                     inputRange: [0, 1],
@@ -319,7 +325,7 @@ const LoginScreen = ({ onLoginSuccess }) => {
               onPress={() => switchMode('register')}
             >
               <Animated.Text
-                className="text-[13px] font-semibold text-sky-100"
+                className={`text-[13px] font-semibold ${isDark ? 'text-sky-100' : 'text-slate-800'}`}
                 style={{
                   opacity: modeAnim.interpolate({
                     inputRange: [0, 1],
@@ -453,18 +459,18 @@ const LoginScreen = ({ onLoginSuccess }) => {
           />
 
           <TouchableOpacity
-            className="mt-4 rounded-2xl border border-sky-900/70 bg-slate-950/70 px-4 py-3"
+            className={`mt-4 rounded-2xl border px-4 py-3 ${isDark ? 'border-sky-900/70 bg-slate-950/70' : 'border-slate-300 bg-slate-100'}`}
             activeOpacity={0.8}
           >
             <View className="flex-row items-center gap-3">
-              <View className="h-10 w-10 items-center justify-center rounded-full border border-sky-800/70 bg-slate-900/80">
+              <View className={`h-10 w-10 items-center justify-center rounded-full border ${isDark ? 'border-sky-800/70 bg-slate-900/80' : 'border-slate-300 bg-slate-200'}`}>
                 <Text className="text-[16px] font-semibold text-sky-200">?</Text>
               </View>
               <View className="flex-1">
-                <Text className="text-[13px] font-semibold text-sky-100">
+                <Text className={`text-[13px] font-semibold ${isDark ? 'text-sky-100' : 'text-slate-800'}`}>
                   Need access?
                 </Text>
-                <Text className="text-[11px] text-slate-400">
+                <Text className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                   Contact your lab admin to enable secure sign-in for your workspace.
                 </Text>
               </View>

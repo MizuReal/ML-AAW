@@ -15,6 +15,7 @@ import { decode } from 'base64-arraybuffer';
 import InputField from '../components/InputField';
 import PredictButton from '../components/PredictButton';
 import { supabase } from '../utils/supabaseClient';
+import { useAppTheme } from '../utils/theme';
 
 const SUPABASE_PROFILES_TABLE = process.env.EXPO_PUBLIC_SUPABASE_PROFILES_TABLE || 'profiles';
 const SUPABASE_AVATAR_BUCKET = process.env.EXPO_PUBLIC_SUPABASE_AVATAR_BUCKET || 'avatars';
@@ -37,6 +38,7 @@ const getInitials = (value) => {
 };
 
 const ProfileScreen = ({ onNavigate }) => {
+  const { isDark } = useAppTheme();
   const [profile, setProfile] = useState({
     name: '',
     email: '',
@@ -263,7 +265,7 @@ const ProfileScreen = ({ onNavigate }) => {
 
   return (
     <Animated.View
-      className="flex-1 bg-aquadark"
+      className={`flex-1 ${isDark ? 'bg-aquadark' : 'bg-slate-100'}`}
       style={{
         opacity: screenAnim,
         transform: [
@@ -284,13 +286,13 @@ const ProfileScreen = ({ onNavigate }) => {
         <View className="mb-2 flex-row items-center justify-between">
           <TouchableOpacity
             activeOpacity={0.8}
-            className="rounded-full border border-sky-900/70 bg-aquadark/80 px-3 py-1.5"
+            className={`rounded-full border px-3 py-1.5 ${isDark ? 'border-sky-900/70 bg-aquadark/80' : 'border-slate-300 bg-slate-100'}`}
             onPress={() => onNavigate && onNavigate('home')}
           >
-            <Text className="text-[12px] font-medium text-sky-100">⟵ Dashboard</Text>
+            <Text className={`text-[12px] font-medium ${isDark ? 'text-sky-100' : 'text-slate-800'}`}>⟵ Dashboard</Text>
           </TouchableOpacity>
-          <View className="rounded-full border border-slate-800/70 bg-slate-950/70 px-3 py-1">
-            <Text className="text-[11px] font-semibold uppercase tracking-wide text-slate-300">
+          <View className={`rounded-full border px-3 py-1 ${isDark ? 'border-slate-800/70 bg-slate-950/70' : 'border-slate-300 bg-slate-100'}`}>
+            <Text className={`text-[11px] font-semibold uppercase tracking-wide ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
               Ops Live
             </Text>
           </View>
@@ -306,17 +308,17 @@ const ProfileScreen = ({ onNavigate }) => {
               />
             ) : (
               <View className="h-full w-full items-center justify-center">
-                <Text className="text-[14px] font-semibold text-sky-50">
+                <Text className={`text-[14px] font-semibold ${isDark ? 'text-sky-50' : 'text-slate-700'}`}>
                   {getInitials(profile.name || profile.email)}
                 </Text>
               </View>
             )}
           </View>
           <View className="flex-1">
-            <Text className="text-[18px] font-semibold text-sky-100">
+            <Text className={`text-[18px] font-semibold ${isDark ? 'text-sky-100' : 'text-slate-800'}`}>
               {profile.name || 'Analyst profile'}
             </Text>
-            <Text className="mt-0.5 text-[12px] text-slate-400">
+            <Text className={`mt-0.5 text-[12px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               Profile, preferences and personal data footprint.
             </Text>
           </View>
@@ -329,11 +331,11 @@ const ProfileScreen = ({ onNavigate }) => {
         showsVerticalScrollIndicator={false}
       >
         {/* Update account */}
-        <View className="mt-1 rounded-2xl border border-sky-900/70 bg-sky-950/40 p-4">
-          <Text className="text-[11px] font-medium uppercase tracking-wide text-sky-300">
+        <View className={`mt-1 rounded-2xl border p-4 ${isDark ? 'border-sky-900/70 bg-sky-950/40' : 'border-slate-300 bg-sky-50'}`}>
+          <Text className={`text-[11px] font-medium uppercase tracking-wide ${isDark ? 'text-sky-300' : 'text-sky-600'}`}>
             Account
           </Text>
-          <Text className="mt-1 text-[12px] text-slate-400">
+          <Text className={`mt-1 text-[12px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
             Basic profile details used across reports and exports.
           </Text>
 
@@ -368,7 +370,7 @@ const ProfileScreen = ({ onNavigate }) => {
           <View className="mt-4">
             {profile.avatarUrl ? (
               <View className="mb-3">
-                <View className="h-24 w-24 overflow-hidden rounded-2xl border border-sky-900/60 bg-slate-950/60">
+                <View className={`h-24 w-24 overflow-hidden rounded-2xl border ${isDark ? 'border-sky-900/60 bg-slate-950/60' : 'border-slate-300 bg-slate-100'}`}>
                   <Image
                     source={{ uri: profile.avatarUrl }}
                     className="h-full w-full"
@@ -379,7 +381,7 @@ const ProfileScreen = ({ onNavigate }) => {
                     onPress={handleRemoveAvatar}
                     className="absolute right-1 top-1 h-6 w-6 items-center justify-center rounded-full border border-rose-500/50 bg-rose-500/20"
                   >
-                    <Text className="text-[12px] font-semibold text-rose-100">X</Text>
+                    <Text className={`text-[12px] font-semibold ${isDark ? 'text-rose-100' : 'text-rose-600'}`}>X</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -387,15 +389,15 @@ const ProfileScreen = ({ onNavigate }) => {
             <View className="flex-row flex-wrap gap-2">
               <TouchableOpacity
                 activeOpacity={0.85}
-                className="rounded-full border border-sky-800 bg-slate-950/60 px-4 py-2"
+                className={`rounded-full border px-4 py-2 ${isDark ? 'border-sky-800 bg-slate-950/60' : 'border-slate-300 bg-slate-100'}`}
                 onPress={handlePickAvatar}
               >
-                <Text className="text-[12px] font-semibold text-sky-100">📷 Upload photo</Text>
+                <Text className={`text-[12px] font-semibold ${isDark ? 'text-sky-100' : 'text-slate-700'}`}>📷 Upload photo</Text>
               </TouchableOpacity>
             </View>
             <View className="mt-3">
               <PredictButton title={loading ? 'Saving...' : 'Save changes'} onPress={handleSave} />
-              <Text className="mt-2 text-[11px] text-slate-500">
+              <Text className={`mt-2 text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>
                 {status || 'Changes sync to Supabase when saved.'}
               </Text>
             </View>
@@ -403,48 +405,48 @@ const ProfileScreen = ({ onNavigate }) => {
         </View>
 
         {/* My data summary */}
-        <View className="rounded-2xl border border-sky-900/80 bg-aquadark/80 p-4">
-          <Text className="text-[11px] font-medium uppercase tracking-wide text-sky-300">
+        <View className={`rounded-2xl border p-4 ${isDark ? 'border-sky-900/80 bg-aquadark/80' : 'border-slate-300 bg-white'}`}>
+          <Text className={`text-[11px] font-medium uppercase tracking-wide ${isDark ? 'text-sky-300' : 'text-sky-600'}`}>
             My data
           </Text>
-          <Text className="mt-1 text-[12px] text-slate-400">
+          <Text className={`mt-1 text-[12px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
             Quick snapshot of how you have used the system recently.
           </Text>
 
           <View className="mt-3 gap-3">
             <View className="flex-row items-center justify-between">
               <View>
-                <Text className="text-[13px] text-sky-100">Samples logged</Text>
-                <Text className="text-[11px] text-slate-400">
+                <Text className={`text-[13px] ${isDark ? 'text-sky-100' : 'text-slate-800'}`}>Samples logged</Text>
+                <Text className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                   Physicochemical entries captured in the last week.
                 </Text>
               </View>
-              <View className="rounded-full bg-sky-900/80 px-3 py-1">
-                <Text className="text-[12px] font-semibold text-sky-50">24</Text>
+              <View className={`rounded-full px-3 py-1 ${isDark ? 'bg-sky-900/80' : 'bg-sky-100'}`}>
+                <Text className={`text-[12px] font-semibold ${isDark ? 'text-sky-50' : 'text-sky-700'}`}>24</Text>
               </View>
             </View>
 
             <View className="flex-row items-center justify-between">
               <View>
-                <Text className="text-[13px] text-sky-100">Container analyses</Text>
-                <Text className="text-[11px] text-slate-400">
+                <Text className={`text-[13px] ${isDark ? 'text-sky-100' : 'text-slate-800'}`}>Container analyses</Text>
+                <Text className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                   Imaging-based container checks you have run.
                 </Text>
               </View>
-              <View className="rounded-full bg-sky-900/80 px-3 py-1">
-                <Text className="text-[12px] font-semibold text-sky-50">9</Text>
+              <View className={`rounded-full px-3 py-1 ${isDark ? 'bg-sky-900/80' : 'bg-sky-100'}`}>
+                <Text className={`text-[12px] font-semibold ${isDark ? 'text-sky-50' : 'text-sky-700'}`}>9</Text>
               </View>
             </View>
 
             <View className="flex-row items-center justify-between">
               <View>
-                <Text className="text-[13px] text-sky-100">Alerts reviewed</Text>
-                <Text className="text-[11px] text-slate-400">
+                <Text className={`text-[13px] ${isDark ? 'text-sky-100' : 'text-slate-800'}`}>Alerts reviewed</Text>
+                <Text className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                   Flagged runs you have inspected from history.
                 </Text>
               </View>
-              <View className="rounded-full bg-rose-500/10 px-3 py-1">
-                <Text className="text-[12px] font-semibold text-rose-200">3</Text>
+              <View className={`rounded-full px-3 py-1 ${isDark ? 'bg-rose-500/10' : 'bg-rose-100'}`}>
+                <Text className={`text-[12px] font-semibold ${isDark ? 'text-rose-200' : 'text-rose-600'}`}>3</Text>
               </View>
             </View>
           </View>
@@ -452,19 +454,19 @@ const ProfileScreen = ({ onNavigate }) => {
           <View className="mt-4 flex-row justify-between">
             <TouchableOpacity
               activeOpacity={0.85}
-              className="rounded-full border border-aquaprimary/70 bg-aquaprimary/10 px-3 py-1.5"
+              className={`rounded-full border px-3 py-1.5 ${isDark ? 'border-aquaprimary/70 bg-aquaprimary/10' : 'border-sky-400 bg-sky-50'}`}
               onPress={() => onNavigate && onNavigate('predictionHistory')}
             >
-              <Text className="text-[11px] font-medium text-sky-50">
+              <Text className={`text-[11px] font-medium ${isDark ? 'text-sky-50' : 'text-sky-700'}`}>
                 View prediction history
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               activeOpacity={0.85}
-              className="rounded-full border border-sky-800 bg-aquadark px-3 py-1.5"
+              className={`rounded-full border px-3 py-1.5 ${isDark ? 'border-sky-800 bg-aquadark' : 'border-slate-300 bg-slate-100'}`}
               onPress={() => onNavigate && onNavigate('dataInput')}
             >
-              <Text className="text-[11px] font-medium text-sky-100">
+              <Text className={`text-[11px] font-medium ${isDark ? 'text-sky-100' : 'text-slate-800'}`}>
                 New sample
               </Text>
             </TouchableOpacity>
